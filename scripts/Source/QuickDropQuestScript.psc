@@ -182,21 +182,39 @@ Function HandleKeepAllHotkey()
 	endif
 EndFunction
 
+int Function GetNextStackIndex(int index = -1)
+	{Get the next stack index from the passed-in index, or from currentIndex if no index is passed.}
+	if index == -1
+		index = currentIndex
+	endif
+	index += 1
+	if index >= maxRemembered
+		return 0
+	endif
+	return index
+EndFunction
+
+int Function GetPreviousStackIndex(int index = -1)
+	{Get the previous stack index from the passed-in index, or from currentIndex if no index is passed.}
+	if index == -1
+		index = currentIndex
+	endif
+	index -= 1
+	if index < 0
+		return maxRemembered - 1
+	endif
+	return index
+EndFunction
+
 int Function IncrementCurrentIndex()
 	{Increment currentIndex, keeping it within the bounds set by maxRemembered.}
-	currentIndex += 1
-	if currentIndex >= maxRemembered
-		currentIndex = 0
-	endif
+	currentIndex = GetNextStackIndex()
 	return currentIndex
 EndFunction
 
 int Function DecrementCurrentIndex()
 	{Decrement currentIndex, keeping it within the bounds set by maxRemembered.}
-	currentIndex -= 1
-	if currentIndex < 0
-		currentIndex = maxRemembered - 1
-	endif
+	currentIndex = GetPreviousStackIndex()
 	return currentIndex
 EndFunction
 
