@@ -103,8 +103,10 @@ string Function QuantityIntToString(int quantityInt)
 	if quantityInt == 0
 		return "Remember All"
 	elseif quantityInt == 1
-		return "Remember Each"
+		return "Collapse All"
 	elseif quantityInt == 2
+		return "Remember Each"
+	elseif quantityInt == 3
 		return "Remember One"
 	endif
 	return "ERROR - Please Report"
