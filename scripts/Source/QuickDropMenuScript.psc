@@ -36,7 +36,7 @@ Function DrawAdvancedPage()
 	{Draw the "Advanced" settings page.}
 	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
-	AddTextOptionST("QuantityHandling", "Quantity Handling", QuantityIntToString(QuickDropQuest.quantityHandling))
+	AddTextOptionST("QuantityHandling", "Quantity Handling", QuantityIntToString(QuickDropQuest.pickUpBehavior))
 	SetCursorPosition(1)
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
@@ -236,11 +236,11 @@ EndState
 
 State QuantityHandling
 	Event OnSelectST()
-		SetTextOptionValueST(QuantityIntToString(QuickDropQuest.IncrementQuantityHandling()))
+		SetTextOptionValueST(QuantityIntToString(QuickDropQuest.IncrementPickUpBehavior()))
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.quantityHandling = 0
+		QuickDropQuest.pickUpBehavior = 0
 		SetTextOptionValueST("Remember All")
 	EndEvent
 

@@ -32,7 +32,7 @@ bool Property notifyOnKeep = False Auto
 bool Property notifyOnSkip = False Auto
 {Whether or not to display a message when an item is skipped.}
 
-int Property quantityHandling = 0 Auto
+int Property pickUpBehavior = 0 Auto
 {How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Only One.}
 
 ;Remember the index of the current item.
@@ -63,13 +63,13 @@ Auto State Ready
 	Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 		GoToState("Working")
 		if akItemReference == None
-			if quantityHandling == 0		;Remember the item and how many we picked up as a stack.
+			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
 				int newCurrentIndex = IncrementCurrentIndex()
 				RememberedItems[currentIndex] = akBaseItem
 				RememberedQuantities[currentIndex] = aiItemCount
-			elseif quantityHandling == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
+			elseif pickUpBehavior == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
 				;placeholder
-			elseif quantityHandling == 2	;Remember as many individual instances of the item as we can.
+			elseif pickUpBehavior == 2	;Remember as many individual instances of the item as we can.
 				int i = 0
 				While i < aiItemCount && i < maxRemembered
 					int newCurrentIndex = IncrementCurrentIndex()
@@ -77,7 +77,7 @@ Auto State Ready
 					RememberedQuantities[currentIndex] = 1
 					i += 1
 				EndWhile
-			elseif quantityHandling == 3	;Remember only one instance of the item.
+			elseif pickUpBehavior == 3	;Remember only one instance of the item.
 				int newCurrentIndex = IncrementCurrentIndex()
 				RememberedItems[currentIndex] = akBaseItem
 				RememberedQuantities[currentIndex] = 1
@@ -200,12 +200,12 @@ int Function DecrementCurrentIndex()
 	return currentIndex
 EndFunction
 
-int Function IncrementQuantityHandling()
-	quantityHandling += 1
-	if quantityHandling > 3
-		quantityHandling = 0
+int Function IncrementPickUpBehavior()
+	pickUpBehavior += 1
+	if pickUpBehavior > 3
+		pickUpBehavior = 0
 	endif
-	return quantityHandling
+	return pickUpBehavior
 EndFunction
 
 Function AdjustMaxRemembered(int newMaxRemembered)
