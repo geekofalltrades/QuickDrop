@@ -200,14 +200,6 @@ int Function DecrementCurrentIndex()
 	return currentIndex
 EndFunction
 
-int Function IncrementPickUpBehavior()
-	pickUpBehavior += 1
-	if pickUpBehavior > 3
-		pickUpBehavior = 0
-	endif
-	return pickUpBehavior
-EndFunction
-
 Function AdjustMaxRemembered(int newMaxRemembered)
 	{Aligns the remembered item stack with the beginning of the arrays and sets a new maxRemembered.}
 	if RememberedItems[currentIndex] != None	;If we have at least one item remembered.
