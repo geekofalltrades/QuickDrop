@@ -7,24 +7,43 @@ QuickDropQuestScript Property QuickDropQuest Auto
 QuickDropPlayerScript Property QuickDropPlayer Auto
 {The player script.}
 
+Event OnConfigInit()
+	{Perform menu setup.}
+	Pages = new string[2]
+	Pages[0] = "Basic"
+	Pages[1] = "Advanced"
+EndEvent
+
 Event OnPageReset(string page)
 	{Draw the menu.}
 	SetCursorFillMode(TOP_TO_BOTTOM)
+	if page == "Basic"
+		DrawBasicPage()
+	elseif page == "Advanced"
+		DrawAdvancedPage()
+	endif
+EndEvent
+
+Function DrawBasicPage()
+	{Draw the "Basic" settings page.}
 	AddHeaderOption("Hotkeys")
 	AddKeymapOptionST("ShowHotkey", "Show Current Item", QuickDropQuest.showHotkey)
 	AddKeymapOptionST("DropHotkey", "Drop Current Item", QuickDropQuest.dropHotkey)
 	AddKeymapOptionST("KeepHotkey", "Keep Current Item", QuickDropQuest.keepHotkey)
 	AddKeymapOptionST("DropAllHotkey", "Drop All Items", QuickDropQuest.dropAllHotkey)
 	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
-	AddEmptyOption()
+	DrawRememberedItems()
+EndFunction
+
+Function DrawAdvancedPage()
+	{Draw the "Advanced" settings page.}
 	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
 	AddTextOptionST("QuantityHandling", "Quantity Handling", QuantityIntToString(QuickDropPlayer.quantityHandling))
 	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropPlayer.notifyOnSkip)
 	AddToggleOptionST("NotifyOnDrop", "Show Message when Item Dropped", QuickDropQuest.notifyOnDrop)
 	AddToggleOptionST("NotifyOnKeep", "Show Message when Item Kept", QuickDropQuest.notifyOnKeep)
-	DrawRememberedItems()
-EndEvent
+EndFunction
 
 Function DrawRememberedItems()
 	SetCursorPosition(1)
