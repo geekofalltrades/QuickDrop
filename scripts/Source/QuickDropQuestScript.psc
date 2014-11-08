@@ -29,6 +29,12 @@ int Property maxRemembered = 5 Auto
 bool Property notifyOnDrop = False Auto
 bool Property notifyOnKeep = False Auto
 
+bool Property notifyOnSkip = False Auto
+{Whether or not to display a message when an item is skipped.}
+
+int Property quantityHandling = 0 Auto
+{How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Only One.}
+
 ;Remember the index of the current item.
 ;Start it at 9 so that the first call to IncrementCurrentIndex sets it back to 0.
 int Property currentIndex = 9 Auto
@@ -53,13 +59,43 @@ Auto State Ready
 			GoToState("Ready")
 		endif
 	EndEvent
+
+	Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
+		GoToState("Working")
+		if akItemReference == None
+			if quantityHandling == 0		;Remember the item and how many we picked up as a stack.
+				int newCurrentIndex = IncrementCurrentIndex()
+				RememberedItems[currentIndex] = akBaseItem
+				RememberedQuantities[currentIndex] = aiItemCount
+			elseif quantityHandling == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
+				;placeholder
+			elseif quantityHandling == 2	;Remember as many individual instances of the item as we can.
+				int i = 0
+				While i < aiItemCount && i < maxRemembered
+					int newCurrentIndex = IncrementCurrentIndex()
+					RememberedItems[currentIndex] = akBaseItem
+					RememberedQuantities[currentIndex] = 1
+					i += 1
+				EndWhile
+			elseif quantityHandling == 3	;Remember only one instance of the item.
+				int newCurrentIndex = IncrementCurrentIndex()
+				RememberedItems[currentIndex] = akBaseItem
+				RememberedQuantities[currentIndex] = 1
+			endif
+		elseif notifyOnSkip
+			Debug.Notification("QuickDrop: " + akBaseItem.GetName() + " not remembered.")
+		endif
+		GoToState("Ready")
+	EndFunction
 EndState
 
 State Working
-	Event OnKeyDown(int KeyCode)
-		{Don't listen for additional keypresses while working.}
-	EndEvent
+	;Don't listen for keypresses or remember items while not Ready.
 EndState
+
+Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
+	{Don't attempt to remember additional items while not Ready.}
+EndFunction
 
 Event OnInit()
 	{Perform script setup.}
@@ -162,6 +198,14 @@ int Function DecrementCurrentIndex()
 		currentIndex = maxRemembered - 1
 	endif
 	return currentIndex
+EndFunction
+
+int Function IncrementQuantityHandling()
+	quantityHandling += 1
+	if quantityHandling > 3
+		quantityHandling = 0
+	endif
+	return quantityHandling
 EndFunction
 
 Function AdjustMaxRemembered(int newMaxRemembered)

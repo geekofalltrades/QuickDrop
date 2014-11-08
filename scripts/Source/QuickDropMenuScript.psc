@@ -4,9 +4,6 @@ Scriptname QuickDropMenuScript extends SKI_ConfigBase
 QuickDropQuestScript Property QuickDropQuest Auto
 {The main quest script.}
 
-QuickDropPlayerScript Property QuickDropPlayer Auto
-{The player script.}
-
 Event OnConfigInit()
 	{Perform menu setup.}
 	Pages = new string[2]
@@ -39,10 +36,10 @@ Function DrawAdvancedPage()
 	{Draw the "Advanced" settings page.}
 	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
-	AddTextOptionST("QuantityHandling", "Quantity Handling", QuantityIntToString(QuickDropPlayer.quantityHandling))
+	AddTextOptionST("QuantityHandling", "Quantity Handling", QuantityIntToString(QuickDropQuest.quantityHandling))
 	SetCursorPosition(1)
 	AddHeaderOption("Notifications")
-	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropPlayer.notifyOnSkip)
+	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
 	AddToggleOptionST("NotifyOnDrop", "Show Message when Item Dropped", QuickDropQuest.notifyOnDrop)
 	AddToggleOptionST("NotifyOnKeep", "Show Message when Item Kept", QuickDropQuest.notifyOnKeep)
 EndFunction
@@ -239,11 +236,11 @@ EndState
 
 State QuantityHandling
 	Event OnSelectST()
-		SetTextOptionValueST(QuantityIntToString(QuickDropPlayer.IncrementQuantityHandling()))
+		SetTextOptionValueST(QuantityIntToString(QuickDropQuest.IncrementQuantityHandling()))
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropPlayer.quantityHandling = 0
+		QuickDropQuest.quantityHandling = 0
 		SetTextOptionValueST("Remember All")
 	EndEvent
 
@@ -254,12 +251,12 @@ EndState
 
 State NotifyOnSkip
 	Event OnSelectST()
-		QuickDropPlayer.notifyOnSkip = !QuickDropPlayer.notifyOnSkip
-		SetToggleOptionValueST(QuickDropPlayer.notifyOnSkip)
+		QuickDropQuest.notifyOnSkip = !QuickDropQuest.notifyOnSkip
+		SetToggleOptionValueST(QuickDropQuest.notifyOnSkip)
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropPlayer.notifyOnSkip = False
+		QuickDropQuest.notifyOnSkip = False
 		SetToggleOptionValueST(False)
 	EndEvent
 
