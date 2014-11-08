@@ -218,6 +218,22 @@ int Function DecrementCurrentIndex()
 	return currentIndex
 EndFunction
 
+Function SwapIndexToTop(int index)
+	{Move the item(s) at index to the top of the stack, pushing down the others.}
+	Form itemToTop = RememberedItems[index]
+	int quantityToTop = RememberedQuantities[index]
+
+	While index != currentIndex
+		int nextIndex = GetNextStackIndex(index)
+		RememberedItems[index] = RememberedItems[nextIndex]
+		RememberedQuantities[index] = RememberedQuantities[nextIndex]
+		index = nextIndex
+	EndWhile
+
+	RememberedItems[currentIndex] = itemToTop
+	RememberedQuantities[currentIndex] = quantityToTop
+EndFunction
+
 Function AdjustMaxRemembered(int newMaxRemembered)
 	{Aligns the remembered item stack with the beginning of the arrays and sets a new maxRemembered.}
 	if RememberedItems[currentIndex] != None	;If we have at least one item remembered.
