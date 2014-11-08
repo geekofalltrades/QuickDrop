@@ -34,9 +34,14 @@ EndFunction
 
 Function DrawAdvancedPage()
 	{Draw the "Advanced" settings page.}
-	AddHeaderOption("Settings")
+	AddHeaderOption("General")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
-	AddTextOptionST("QuantityHandling", "Quantity Handling", QuantityIntToString(QuickDropQuest.pickUpBehavior))
+	AddEmptyOption()
+	AddHeaderOption("On Item(s) Picked Up")
+	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
+	AddToggleOptionST("PickUpBehaviorCollapseAll", "Remember to One Stack Slot", QuickDropQuest.pickUpBehavior == 1)
+	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
+	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
 	SetCursorPosition(1)
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
@@ -234,18 +239,76 @@ State MaxRemembered
 	EndEvent
 EndState
 
-State QuantityHandling
+Function PickUpBehaviorOnSelect(int option)
+	QuickDropQuest.pickUpBehavior = option
+	SetToggleOptionValueST(option == 0, true, "PickUpBehaviorRememberAll")
+	SetToggleOptionValueST(option == 1, true, "PickUpBehaviorCollapseAll")
+	SetToggleOptionValueST(option == 2, true, "PickUpBehaviorRememberEach")
+	SetToggleOptionValueST(option == 3, false, "PickUpBehaviorRememberSome")
+EndFunction
+
+Function PickUpBehaviorOnDefault()
+	{Reset the PickUpBehavior option group to its defaults.}
+	QuickDropQuest.pickUpBehavior = 0
+	SetToggleOptionValueST(true, true, "PickUpBehaviorRememberAll")
+	SetToggleOptionValueST(false, true, "PickUpBehaviorCollapseAll")
+	SetToggleOptionValueST(false, true, "PickUpBehaviorRememberEach")
+	SetToggleOptionValueST(false, false, "PickUpBehaviorRememberSome")
+EndFunction
+
+State PickUpBehaviorRememberAll
 	Event OnSelectST()
-		SetTextOptionValueST(QuantityIntToString(QuickDropQuest.IncrementPickUpBehavior()))
+		PickUpBehaviorOnSelect(0)
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.pickUpBehavior = 0
-		SetTextOptionValueST("Remember All")
+		PickUpBehaviorOnDefault()
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("How to remember multiple items of the same type when picked up at once.\nRemember All: Remember items as a stack. Remember Each: Remember as many individually as possible.\nRemember One: Remember only one of the item picked up.")
+		SetInfoText("When item(s) are picked up, remember the item and the quantity picked up in one stack slot.\nItem(s) of the same type picked up separately occupy their own stack slots.")
+	EndEvent
+EndState
+
+State PickUpBehaviorCollapseAll
+	Event OnSelectST()
+		PickUpBehaviorOnSelect(1)
+	EndEvent
+
+	Event OnDefaultST()
+		PickUpBehaviorOnDefault()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("When item(s) are picked up, remember the item and the quantity picked up in one stack slot.\nItem(s) of the same type picked up separately are added to the same stack slot.\nThis shared stack slot is moved to the top of the stack whenever it's added to.")
+	EndEvent
+EndState
+
+State PickUpBehaviorRememberEach
+	Event OnSelectST()
+		PickUpBehaviorOnSelect(2)
+	EndEvent
+
+	Event OnDefaultST()
+		PickUpBehaviorOnDefault()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("When item(s) are picked up, remember each one individually.\nOnly as many are remembered as will fit in your remembered items stack.")
+	EndEvent
+EndState
+
+State PickUpBehaviorRememberSome
+	Event OnSelectST()
+		PickUpBehaviorOnSelect(3)
+	EndEvent
+
+	Event OnDefaultST()
+		PickUpBehaviorOnDefault()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("When item(s) are picked up, remember only some in one stack slot.\nThe rest go into your inventory without being remembered.")
 	EndEvent
 EndState
 
