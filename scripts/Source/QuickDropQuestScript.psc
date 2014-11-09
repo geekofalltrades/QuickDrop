@@ -64,37 +64,56 @@ Auto State Ready
 		GoToState("Working")
 		if akItemReference == None
 			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
-				int newCurrentIndex = IncrementCurrentIndex()
-				RememberedItems[currentIndex] = akBaseItem
-				RememberedQuantities[currentIndex] = aiItemCount
+				RememberNewItem(akBaseItem, aiItemCount)
+
 			elseif pickUpBehavior == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
-				;placeholder
+				int existingItemIndex = RememberedItems.Find(akBaseItem)
+				if existingItemIndex < 0	;If we don't already have this item in the stack.
+					RememberNewItem(akBaseItem, aiItemCount)	;Add it to the top.
+				else						;We do have this item in the stack somewhere.
+					SwapIndexToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
+					RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + aiItemCount
+				endif
+
 			elseif pickUpBehavior == 2	;Remember as many individual instances of the item as we can.
 				int i = 0
 				While i < aiItemCount && i < maxRemembered
-					int newCurrentIndex = IncrementCurrentIndex()
-					RememberedItems[currentIndex] = akBaseItem
-					RememberedQuantities[currentIndex] = 1
+					RememberNewItem(akBaseItem, 1)
 					i += 1
 				EndWhile
+
 			elseif pickUpBehavior == 3	;Remember only one instance of the item.
-				int newCurrentIndex = IncrementCurrentIndex()
-				RememberedItems[currentIndex] = akBaseItem
-				RememberedQuantities[currentIndex] = 1
+				RememberNewItem(akBaseItem, 1)
+
 			endif
+
 		elseif notifyOnSkip
 			Debug.Notification("QuickDrop: " + akBaseItem.GetName() + " not remembered.")
 		endif
 		GoToState("Ready")
 	EndFunction
+
+	Function AdjustMaxRemembered(int newMaxRemembered)
+		{Set a new maxRemembered. Thin wrapper around AlignAndResizeStack.}
+		if newMaxRemembered != maxRemembered	;If the size of the stack is actually changing.
+			GoToState("Working")
+			AlignAndResizeStack(newMaxRemembered)
+			maxRemembered = newMaxRemembered
+			GoToState("Ready")
+		endif
+	EndFunction
 EndState
 
 State Working
-	;Don't listen for keypresses or remember items while not Ready.
+	;Thread lock when state-altering actions are taking place.
 EndState
 
 Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 	{Don't attempt to remember additional items while not Ready.}
+EndFunction
+
+Function AdjustMaxRemembered(int newMaxRemembered)
+	{Don't adjust maxRemembered while not Ready.}
 EndFunction
 
 Event OnInit()
@@ -108,6 +127,13 @@ Event OnInit()
 		i += 1
 	EndWhile
 EndEvent
+
+Function RememberNewItem(Form itemToRemember, int quantityToRemember)
+	{Push a new item and quantity onto the stack.}
+	int newCurrentIndex = IncrementCurrentIndex()
+	RememberedItems[currentIndex] = itemToRemember
+	RememberedQuantities[currentIndex] = quantityToRemember
+EndFunction
 
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
@@ -300,13 +326,5 @@ Function AlignAndResizeStack(int newStackSize = -1)
 		if currentIndex < 0	;Special case: the stack was aligned while it contained 10 items, and so contains no None.
 			currentIndex = 9
 		endif
-	endif
-EndFunction
-
-Function AdjustMaxRemembered(int newMaxRemembered)
-	{Set a new maxRemembered. Thin wrapper around AlignAndResizeStack.}
-	if newMaxRemembered != maxRemembered	;If the size of the stack is actually changing.
-		AlignAndResizeStack(newMaxRemembered)
-		maxRemembered = newMaxRemembered
 	endif
 EndFunction
