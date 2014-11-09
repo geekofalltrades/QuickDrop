@@ -218,6 +218,21 @@ int Function DecrementCurrentIndex()
 	return currentIndex
 EndFunction
 
+int Function CountRememberedItems()
+	{Count the number of remembered item stack slots that are filled.}
+	int i = currentIndex
+	int iterations = 0
+	int rememberedCount = 0
+
+	While RememberedItems[i] != None && iterations < maxRemembered
+		rememberedCount += 1
+		i = GetPreviousStackIndex(i)
+		iterations += 1
+	EndWhile
+
+	return rememberedCount
+EndFunction
+
 Function SwapIndexToTop(int index)
 	{Move the item(s) at index to the top of the stack, pushing down the others.}
 	Form itemToTop = RememberedItems[index]
@@ -245,46 +260,53 @@ Function SwapIndices(int indexOne, int indexTwo)
 	RememberedQuantities[indexTwo] = tempQuantity
 EndFunction
 
-Function AdjustMaxRemembered(int newMaxRemembered)
-	{Aligns the remembered item stack with the beginning of the arrays and sets a new maxRemembered.}
-	if newMaxRemembered != maxRemembered	;If the size of the stack is actually changing.
-		if RememberedItems[currentIndex] != None	;If we have at least one item remembered.
-			Form[] newItems = new Form[10]
-			int[] newQuantities = new int[10]
+Function AlignAndResizeStack(int newStackSize = -1)
+	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. Optionally re-size the stack.}
+	if RememberedItems[currentIndex] == None	;If the stack is empty.
+		currentIndex = 9							;Reset currentIndex so the next item remembered is at 0.
+	else										;If we have at least one item remembered.
+		Form[] newItems = new Form[10]				;Build new, aligned stack arrays.
+		int[] newQuantities = new int[10]
 
-			int i = 0	;Initialize our new remembered items arrays.
-			While i < 10
-				newItems[i] = None
-				newQuantities[i] = 0
-				i += 1
-			EndWhile
+		int i = 0
+		While i < 10
+			newItems[i] = None
+			newQuantities[i] = 0
+			i += 1
+		EndWhile
 
-			i = currentIndex
-			int rememberedCount = 0	;Count the number of items we currently have remembered.
-			While RememberedItems[i] != None
-				rememberedCount += 1
-				i = GetPreviousStackIndex(i)
-			EndWhile
-
-			if rememberedCount >= newMaxRemembered	;If the currently remembered items match or overflow the new limit.
-				i = newMaxRemembered - 1				;Then we start our stack at the highest allowed position.
-			else							;If the currently remembered items don't fill the new limit.
-				i = rememberedCount - 1			;Then we start our stack at the position matching the last element remembered.
-			endif
-
-			While i >= 0
-				newItems[i] = RememberedItems[currentIndex]
-				newQuantities[i] = RememberedQuantities[currentIndex]
-				DecrementCurrentIndex()
-				i -= 1
-			EndWhile
-
-			RememberedItems = newItems						;There is no case in which these arrays are full.
-			RememberedQuantities = newQuantities
-			currentIndex = RememberedItems.Find(None) - 1	;There will ALWAYS be a None in this array - Find never returns < 0.
-		else	;If no items are remembered.
-			currentIndex = 9	;Reset to 9 so the next call to IncrementCurrentIndex returns 0.
+		if newStackSize < 1	;If no argument was passed, keep the stack the same size.
+			newStackSize = maxRemembered
 		endif
+
+		int rememberedCount = CountRememberedItems()	;Count the number of items we currently have remembered.
+		if rememberedCount >= newStackSize	;If the currently remembered items match or overflow the stack size.
+			i = newStackSize - 1			;Then we start our stack at the highest allowed position.
+		else								;If the currently remembered items don't fill the new limit.
+			i = rememberedCount - 1				;Then we start our stack as high as needed to accomodate all items.
+		endif
+
+		While i >= 0
+			newItems[i] = RememberedItems[currentIndex]
+			newQuantities[i] = RememberedQuantities[currentIndex]
+			DecrementCurrentIndex()
+			i -= 1
+		EndWhile
+
+		RememberedItems = newItems
+		RememberedQuantities = newQuantities
+		currentIndex = RememberedItems.Find(None) - 1
+
+		if currentIndex < 0	;Special case: the stack was aligned while it contained 10 items, and so contains no None.
+			currentIndex = 9
+		endif
+	endif
+EndFunction
+
+Function AdjustMaxRemembered(int newMaxRemembered)
+	{Set a new maxRemembered. Thin wrapper around AlignAndResizeStack.}
+	if newMaxRemembered != maxRemembered	;If the size of the stack is actually changing.
+		AlignAndResizeStack(newMaxRemembered)
 		maxRemembered = newMaxRemembered
 	endif
 EndFunction
