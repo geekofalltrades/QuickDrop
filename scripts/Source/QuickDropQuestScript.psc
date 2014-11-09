@@ -234,6 +234,17 @@ Function SwapIndexToTop(int index)
 	RememberedQuantities[currentIndex] = quantityToTop
 EndFunction
 
+Function SwapIndices(int indexOne, int indexTwo)
+	{Swap the item(s) at the given indices.}
+	Form tempItem = RememberedItems[indexOne]
+	RememberedItems[indexOne] = RememberedItems[indexTwo]
+	RememberedItems[indexTwo] = tempItem
+
+	int tempQuantity = RememberedQuantities[indexOne]
+	RememberedQuantities[indexOne] = RememberedQuantities[indexTwo]
+	RememberedQuantities[indexTwo] = tempQuantity
+EndFunction
+
 Function AdjustMaxRemembered(int newMaxRemembered)
 	{Aligns the remembered item stack with the beginning of the arrays and sets a new maxRemembered.}
 	if RememberedItems[currentIndex] != None	;If we have at least one item remembered.
