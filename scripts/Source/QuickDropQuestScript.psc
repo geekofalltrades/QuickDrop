@@ -184,7 +184,7 @@ EndFunction
 
 int Function GetNextStackIndex(int index = -1)
 	{Get the next stack index from the passed-in index, or from currentIndex if no index is passed.}
-	if index == -1
+	if index < 0
 		index = currentIndex
 	endif
 	index += 1
@@ -196,7 +196,7 @@ EndFunction
 
 int Function GetPreviousStackIndex(int index = -1)
 	{Get the previous stack index from the passed-in index, or from currentIndex if no index is passed.}
-	if index == -1
+	if index < 0
 		index = currentIndex
 	endif
 	index -= 1
