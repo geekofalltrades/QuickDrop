@@ -247,44 +247,44 @@ EndFunction
 
 Function AdjustMaxRemembered(int newMaxRemembered)
 	{Aligns the remembered item stack with the beginning of the arrays and sets a new maxRemembered.}
-	if RememberedItems[currentIndex] != None	;If we have at least one item remembered.
-		Form[] newItems = new Form[10]
-		int[] newQuantities = new int[10]
+	if newMaxRemembered != maxRemembered	;If the size of the stack is actually changing.
+		if RememberedItems[currentIndex] != None	;If we have at least one item remembered.
+			Form[] newItems = new Form[10]
+			int[] newQuantities = new int[10]
 
-		int i = 0	;Initialize our new remembered items arrays.
-		While i < 10
-			newItems[i] = None
-			newQuantities[i] = 0
-			i += 1
-		EndWhile
+			int i = 0	;Initialize our new remembered items arrays.
+			While i < 10
+				newItems[i] = None
+				newQuantities[i] = 0
+				i += 1
+			EndWhile
 
-		i = 0
-		int rememberedCount = 0	;Count the number of items we currently have remembered.
-		While i < 10
-			if RememberedItems[i] != None
+			i = currentIndex
+			int rememberedCount = 0	;Count the number of items we currently have remembered.
+			While RememberedItems[i] != None
 				rememberedCount += 1
+				i = GetPreviousStackIndex(i)
+			EndWhile
+
+			if rememberedCount >= newMaxRemembered	;If the currently remembered items match or overflow the new limit.
+				i = newMaxRemembered - 1				;Then we start our stack at the highest allowed position.
+			else							;If the currently remembered items don't fill the new limit.
+				i = rememberedCount - 1			;Then we start our stack at the position matching the last element remembered.
 			endif
-			i += 1
-		EndWhile
 
-		if rememberedCount >= newMaxRemembered	;If the currently remembered items match or overflow the new limit.
-			i = newMaxRemembered - 1				;Then we start our stack at the highest allowed position.
-		else							;If the currently remembered items don't fill the new limit.
-			i = rememberedCount - 1			;Then we start our stack at the position matching the last element remembered.
+			While i >= 0
+				newItems[i] = RememberedItems[currentIndex]
+				newQuantities[i] = RememberedQuantities[currentIndex]
+				DecrementCurrentIndex()
+				i -= 1
+			EndWhile
+
+			RememberedItems = newItems						;There is no case in which these arrays are full.
+			RememberedQuantities = newQuantities
+			currentIndex = RememberedItems.Find(None) - 1	;There will ALWAYS be a None in this array - Find never returns < 0.
+		else	;If no items are remembered.
+			currentIndex = 9	;Reset to 9 so the next call to IncrementCurrentIndex returns 0.
 		endif
-
-		While i >= 0
-			newItems[i] = RememberedItems[currentIndex]
-			newQuantities[i] = RememberedQuantities[currentIndex]
-			DecrementCurrentIndex()
-			i -= 1
-		EndWhile
-
-		RememberedItems = newItems
-		RememberedQuantities = newQuantities
-		currentIndex = RememberedItems.Find(None) - 1
-	else	;If no items are remembered.
-		currentIndex = 9	;Reset to 9 so the next call to IncrementCurrentIndex returns 0.
+		maxRemembered = newMaxRemembered
 	endif
-	maxRemembered = newMaxRemembered
 EndFunction
