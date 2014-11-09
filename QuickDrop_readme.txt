@@ -33,3 +33,9 @@ CORRESPONDENCE: For general questions, comments, complaints, compliments, musing
   private message on the Nexus Mods website. My account name there is "thegeekofalltrades."
 
 THANKS to Nexus Mods and to all contributors to the Creation Kit wiki and forums.
+
+CHANGELOG:
+  v1.1:
+    * Fixed bug in case when "Remembered Items" slider was opened and closed with value of 10 and all stack slots full.
+  v1.0:
+    * Initial release.
