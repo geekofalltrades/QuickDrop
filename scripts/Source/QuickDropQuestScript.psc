@@ -70,10 +70,28 @@ Auto State Ready
 				RememberNewItem(akBaseItem, aiItemCount)
 
 			elseif pickUpBehavior == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
-				int existingItemIndex = RememberedItems.Find(akBaseItem)
+				int existingItemIndex
+
+				if QuickDropDuplicateItems.HasForm(akBaseItem)	;If this type of item currently occupies two or more slots in the stack.
+					int[] indices = FindAllInstancesInStack(akBaseItem)	;Get a list of the stack slots occupied by this item.
+					SwapIndexToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
+
+					int i = 1
+					While i < 10 && indices[i] >= 0
+						RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + RememberedQuantities[indices[i]]
+						RemoveIndexFromStack(indices[i])
+						i += 1
+					EndWhile
+
+					QuickDropDuplicateItems.RemoveAddedForm(akBaseItem)	;Remove this item from the list of duplicates.
+					existingItemIndex = currentIndex	;Record that this item is now on the top of the stack.
+				else	;If this item occupies one or no slots in the stack.
+					existingItemIndex = RememberedItems.Find(akBaseItem)	;Search for this item in the stack.
+				endif
+
 				if existingItemIndex < 0	;If we don't already have this item in the stack.
 					RememberNewItem(akBaseItem, aiItemCount)	;Add it to the top.
-				else						;We do have this item in the stack somewhere.
+				else						;If we do have this item in the stack somewhere.
 					SwapIndexToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
 					RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + aiItemCount
 				endif
@@ -117,6 +135,7 @@ Auto State Ready
 					if RememberedItems[i] != None && RememberedItems.Find(RememberedItems[i], i + 1) >= 0 && !QuickDropDuplicateItems.HasForm(RememberedItems[i])
 						QuickDropDuplicateItems.AddForm(RememberedItems[i])
 					endif
+					i += 1
 				EndWhile
 
 			elseif pickUpBehavior == 1	;If we're changing from Remember to One Stack Slot.
@@ -289,20 +308,54 @@ int Function CountRememberedItems()
 	return rememberedCount
 EndFunction
 
+int[] Function FindAllInstancesInStack(Form searchFor)
+	{Starting from currentIndex, find all stack indices occupied by searchFor. Return as an int array populated with indices, terminated by -1 if not full.}
+	int[] results = new int[10]
+	int resultsIndex = 0
+
+	;Mock a do-while structure.
+	if RememberedItems[currentIndex] == searchFor
+		results[resultsIndex] = currentIndex
+		resultsIndex += 1
+	endif
+
+	int i = GetPreviousStackIndex(currentIndex)
+	While i != currentIndex && RememberedItems[i] != None
+		if RememberedItems[i] == searchFor
+			results[resultsIndex] = i
+			resultsIndex += 1
+		endif
+		i = GetPreviousStackIndex(i)
+	EndWhile
+
+	if resultsIndex < 10	;If we haven't filled the results array.
+		results[resultsIndex] = -1	;Terminate it with -1.
+	endif
+
+	return results
+EndFunction
+
 Function SwapIndexToTop(int index)
 	{Move the item(s) at index to the top of the stack, pushing down the others.}
-	Form itemToTop = RememberedItems[index]
-	int quantityToTop = RememberedQuantities[index]
+	if index != currentIndex	;No-op if this index is already the top of the stack.
+		Form itemToTop = RememberedItems[index]
+		int quantityToTop = RememberedQuantities[index]
 
-	While index != currentIndex
+		RemoveIndexFromStack(index)
+		RememberNewItem(itemToTop, quantityToTop)
+	endif
+EndFunction
+
+Function RemoveIndexFromStack(int index)
+	{Remove the item(s) at index from the stack, shifting others down into its place. Doesn't check if index is within stack bounds - make sure to verify this!}
+	While index != currentIndex		;Shift stack down, overwriting this index.
 		int nextIndex = GetNextStackIndex(index)
 		RememberedItems[index] = RememberedItems[nextIndex]
 		RememberedQuantities[index] = RememberedQuantities[nextIndex]
 		index = nextIndex
 	EndWhile
-
-	RememberedItems[currentIndex] = itemToTop
-	RememberedQuantities[currentIndex] = quantityToTop
+	RememberedItems[currentIndex] = None	;Clear the top item of the stack.
+	DecrementCurrentIndex()
 EndFunction
 
 Function SwapIndices(int indexOne, int indexTwo)
