@@ -34,19 +34,20 @@ EndFunction
 
 Function DrawAdvancedPage()
 	{Draw the "Advanced" settings page.}
-	AddHeaderOption("General")
+	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
+	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
 	AddEmptyOption()
+	AddHeaderOption("Notifications")
+	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
+	AddToggleOptionST("NotifyOnDrop", "Show Message when Item Dropped", QuickDropQuest.notifyOnDrop)
+	AddToggleOptionST("NotifyOnKeep", "Show Message when Item Kept", QuickDropQuest.notifyOnKeep)
+	SetCursorPosition(1)
 	AddHeaderOption("On Item(s) Picked Up")
 	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
 	AddToggleOptionST("PickUpBehaviorCollapseAll", "Remember to One Stack Slot", QuickDropQuest.pickUpBehavior == 1)
 	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
 	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
-	SetCursorPosition(1)
-	AddHeaderOption("Notifications")
-	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
-	AddToggleOptionST("NotifyOnDrop", "Show Message when Item Dropped", QuickDropQuest.notifyOnDrop)
-	AddToggleOptionST("NotifyOnKeep", "Show Message when Item Kept", QuickDropQuest.notifyOnKeep)
 EndFunction
 
 Function DrawRememberedItems()
@@ -99,19 +100,6 @@ string Function GetCustomControl(int KeyCode)
 		return "Keep All Items"
 	endif
 	return ""
-EndFunction
-
-string Function QuantityIntToString(int quantityInt)
-	if quantityInt == 0
-		return "Remember All"
-	elseif quantityInt == 1
-		return "Collapse All"
-	elseif quantityInt == 2
-		return "Remember Each"
-	elseif quantityInt == 3
-		return "Remember One"
-	endif
-	return "ERROR - Please Report"
 EndFunction
 
 Event OnConfigClose()
@@ -236,6 +224,30 @@ State MaxRemembered
 
 	Event OnHighlightST()
 		SetInfoText("Number of items to remember.\nThese form a stack of remembered items, with most recently picked up items on top.")
+	EndEvent
+EndState
+
+string Function ForgetOnRemovedBoolToString(bool value)
+	if value
+		return "Forget First"
+	else
+		return "Forget Last"
+	endif
+EndFunction
+
+State ForgetOnRemoved
+	Event OnSelectST()
+		QuickDropQuest.forgetOnRemoved = !QuickDropQuest.forgetOnRemoved
+		SetTextOptionValueST(ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.forgetOnRemoved = True
+		SetTextOptionValueST(ForgetOnRemovedBoolToString(True))
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("How to forget items in your stack when they're removed from your inventory outside of QuickDrop.\nForget First: Items are forgotten top-down as soon as they're removed, even if you have enough left to remember.\nForget Last: Items are forgotten bottom-up only once you don't have enough left to remember.")
 	EndEvent
 EndState
 
