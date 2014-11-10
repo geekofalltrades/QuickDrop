@@ -35,6 +35,13 @@ bool Property notifyOnSkip = False Auto
 int Property pickUpBehavior = 0 Auto
 {How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Only One.}
 
+bool Property forgetOnRemoved = True Auto
+{How to forget items when removed separately. True = Forget first, False = Forget last.}
+;Forget first means treat any items removed from the inventory as the most recent ones picked up. They're removed from the remembered
+;items stack from the top down, even if there are enough left in the inventory to remember.
+;Forget last means treat any items removed from the inventory as the least recent ones picked up. They're removed from the remembered
+;items stack from the bottom up, starting only when there aren't enough left in the inventory to remember.
+
 ;Remember the index of the current item.
 ;Start it at 9 so that the first call to IncrementCurrentIndex sets it back to 0.
 int Property currentIndex = 9 Auto
