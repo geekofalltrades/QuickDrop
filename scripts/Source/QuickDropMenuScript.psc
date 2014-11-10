@@ -240,7 +240,7 @@ State MaxRemembered
 EndState
 
 Function PickUpBehaviorOnSelect(int option)
-	QuickDropQuest.pickUpBehavior = option
+	QuickDropQuest.AdjustPickUpBehavior(option)
 	SetToggleOptionValueST(option == 0, true, "PickUpBehaviorRememberAll")
 	SetToggleOptionValueST(option == 1, true, "PickUpBehaviorCollapseAll")
 	SetToggleOptionValueST(option == 2, true, "PickUpBehaviorRememberEach")
@@ -249,7 +249,7 @@ EndFunction
 
 Function PickUpBehaviorOnDefault()
 	{Reset the PickUpBehavior option group to its defaults.}
-	QuickDropQuest.pickUpBehavior = 0
+	QuickDropQuest.AdjustPickUpBehavior(0)
 	SetToggleOptionValueST(true, true, "PickUpBehaviorRememberAll")
 	SetToggleOptionValueST(false, true, "PickUpBehaviorCollapseAll")
 	SetToggleOptionValueST(false, true, "PickUpBehaviorRememberEach")

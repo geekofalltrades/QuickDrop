@@ -40,6 +40,9 @@ int Property pickUpBehavior = 0 Auto
 int Property currentIndex = 9 Auto
 {The index in RememberedItems of the last item picked up.}
 
+FormList Property QuickDropDuplicateItems Auto
+{Keep a list of items that are duplicated in the stack for use with Remember to One Stack Slot.}
+
 Auto State Ready
 	Event OnKeyDown(int KeyCode)
 		{Map key presses to their respective hotkey actions.}
@@ -102,6 +105,29 @@ Auto State Ready
 			GoToState("Ready")
 		endif
 	EndFunction
+
+	Function AdjustPickUpBehavior(int newPickUpBehavior)
+		{Set a new pickUpBehavior. Perform necessary maintenance.}
+		if newPickUpBehavior != pickUpBehavior	;If pickUpBehavior is actually changing.
+			GoToState("Working")
+
+			if newPickUpBehavior == 1	;If we're changing to Remember to One Stack Slot.
+				int i = 0					;Remember all duplicate items so we can collapse them on next pickup.
+				While i < 9	;Search through the second-to-last array index.
+					if RememberedItems[i] != None && RememberedItems.Find(RememberedItems[i], i + 1) >= 0 && !QuickDropDuplicateItems.HasForm(RememberedItems[i])
+						QuickDropDuplicateItems.AddForm(RememberedItems[i])
+					endif
+				EndWhile
+
+			elseif pickUpBehavior == 1	;If we're changing from Remember to One Stack Slot.
+				QuickDropDuplicateItems.Revert()		;Forget duplicate items, if any.
+			endif
+
+			pickUpBehavior = newPickUpBehavior
+
+			GoToState("Ready")
+		endif
+	EndFunction
 EndState
 
 State Working
@@ -114,6 +140,10 @@ EndFunction
 
 Function AdjustMaxRemembered(int newMaxRemembered)
 	{Don't adjust maxRemembered while not Ready.}
+EndFunction
+
+Function AdjustPickUpBehavior(int newPickUpBehavior)
+	{Don't adjust pickUpBehavior while not Ready.}
 EndFunction
 
 Event OnInit()
