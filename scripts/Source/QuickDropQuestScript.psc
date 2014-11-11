@@ -61,6 +61,9 @@ bool Property notifyOnKeep = True Auto
 bool Property notifyOnSkip = False Auto
 {Whether or not to display a message when an item is skipped.}
 
+bool Property rememberPersistent = False Auto
+{Whether or not to remember (and therefore be able to drop) items with persistent references, like quest items.}
+
 int Property pickUpBehavior = 0 Auto
 {How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Only One.}
 
