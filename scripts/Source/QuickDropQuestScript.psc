@@ -25,6 +25,7 @@ int Property showHotkey = -1 Auto
 int Property keepHotkey = -1 Auto
 int Property dropAllHotkey = -1 Auto
 int Property keepAllHotkey = -1 Auto
+int Property toggleRememberingHotkey = -1 Auto
 int Property maxRemembered = 5 Auto
 bool Property notifyOnDrop = False Auto
 bool Property notifyOnKeep = False Auto
