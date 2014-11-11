@@ -19,6 +19,12 @@ Message Property QuickDropAllItemsDropped Auto
 Message Property QuickDropAllItemsKept Auto
 {Message displayed when all items are kept.}
 
+Message Property QuickDropRememberingOn Auto
+{Message displayed when remembering is toggled on.}
+
+Message Property QuickDropRememberingOff Auto
+{Message displayed when remembering is toggled off.}
+
 ;User input.
 int Property dropHotkey = -1 Auto
 int Property showHotkey = -1 Auto
@@ -62,6 +68,8 @@ Auto State Ready
 				HandleDropAllHotkey()
 			elseif KeyCode == keepAllHotkey
 				HandleKeepAllHotkey()
+			elseif KeyCode == toggleRememberingHotkey
+				HandleToggleRememberingHotkey()
 			endif
 			GoToState("Ready")
 		endif
@@ -69,7 +77,7 @@ Auto State Ready
 
 	Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 		GoToState("Working")
-		if akItemReference == None
+		if currentlyRemembering && akItemReference == None
 			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
 				RememberNewItem(akBaseItem, aiItemCount)
 
@@ -258,6 +266,16 @@ Function HandleKeepAllHotkey()
 		currentIndex = 9	;Reset to 9 so the next call to IncrementCurrentIndex returns 0.
 	else
 		QuickDropNoItemsRemembered.Show()
+	endif
+EndFunction
+
+Function HandleToggleRememberingHotkey()
+	{Toggle currentlyRemembering and display the appropriate message.}
+	currentlyRemembering = !currentlyRemembering
+	if currentlyRemembering
+		QuickDropRememberingOn.Show()
+	else
+		QuickDropRememberingOff.Show()
 	endif
 EndFunction
 
