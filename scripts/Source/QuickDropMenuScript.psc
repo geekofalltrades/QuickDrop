@@ -37,6 +37,7 @@ Function DrawAdvancedPage()
 	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
 	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
+	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering))
 	AddEmptyOption()
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
@@ -225,6 +226,7 @@ State MaxRemembered
 	EndEvent
 EndState
 
+<<<<<<< HEAD
 string Function ForgetOnRemovedBoolToString(bool value)
 	if value
 		return "Forget First"
@@ -246,6 +248,30 @@ State ForgetOnRemoved
 
 	Event OnHighlightST()
 		SetInfoText("How to forget items in your stack when they're removed from your inventory outside of QuickDrop.\nForget First: Items are forgotten top-down as soon as they're removed, even if you have enough left to remember.\nForget Last: Items are forgotten bottom-up only once you don't have enough left to remember.")
+	EndEvent
+EndState
+
+string Function ToggleRememberingBoolToString(bool remembering)
+	if remembering
+		return "ON"
+	else
+		return "OFF"
+	endif
+EndFunction
+
+State ToggleRemembering
+	Event OnSelectST()
+		QuickDropQuest.currentlyRemembering = !QuickDropQuest.currentlyRemembering
+		SetTextOptionValueST(ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering))
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.currentlyRemembering = True
+		SetTextOptionValueST(ToggleRememberingBoolToString(True))
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("While on, QuickDrop will remember new items that are added to your inventory. Turn off to freeze your stack of remembered items.\nCan be toggled in-game with the \"Toggle Remembering\" hotkey.")
 	EndEvent
 EndState
 
