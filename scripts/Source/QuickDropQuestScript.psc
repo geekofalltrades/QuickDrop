@@ -29,7 +29,7 @@ int Property maxRemembered = 5 Auto
 bool Property notifyOnDrop = False Auto
 bool Property notifyOnKeep = False Auto
 
-bool Property notifyOnSkip = False Auto
+bool Property notifyOnPersistent = False Auto
 {Whether or not to display a message when an item is skipped.}
 
 bool Property rememberPersistent = False Auto
@@ -68,7 +68,7 @@ Auto State Ready
 
 	Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 		GoToState("Working")
-		if akItemReference == None
+		if akItemReference == None || rememberPersistent
 			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
 				RememberNewItem(akBaseItem, aiItemCount)
 
@@ -111,8 +111,13 @@ Auto State Ready
 
 			endif
 
-		elseif notifyOnSkip
-			Debug.Notification("QuickDrop: " + akBaseItem.GetName() + " not remembered.")
+			if notifyOnPersistent && akItemReference != None
+				if rememberPersistent
+					Debug.Notification("QuickDrop: Remembered persistent " + akBaseItem.GetName() + ".")
+				else
+					Debug.Notification("QuickDrop: Persistent " + akBaseItem.GetName() + " not remembered.")
+				endif
+			endif
 		endif
 		GoToState("Ready")
 	EndFunction
