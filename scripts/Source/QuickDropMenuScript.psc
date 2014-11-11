@@ -56,16 +56,14 @@ Function DrawRememberedItems()
 	int i = 0
 	int currentIndex = QuickDropQuest.currentIndex
 	While i < QuickDropQuest.maxRemembered
-		if QuickDropQuest.RememberedItems[QuickDropQuest.currentIndex] != None
-			AddTextOption(QuickDropQuest.RememberedItems[QuickDropQuest.currentIndex].GetName() + " (" + QuickDropQuest.RememberedQuantities[QuickDropQuest.currentIndex] + ")", "")
+		if QuickDropQuest.RememberedItems[currentIndex] != None
+			AddTextOption(QuickDropQuest.RememberedItems[currentIndex].GetName() + " (" + QuickDropQuest.RememberedQuantities[currentIndex] + ")", "")
 		else
 			AddEmptyOption()
 		endif
-		QuickDropQuest.DecrementCurrentIndex()
+		currentIndex = QuickDropQuest.GetPreviousStackIndex(currentIndex)
 		i += 1
 	EndWhile
-
-	QuickDropQuest.currentIndex = currentIndex
 
 	While i < 10
 		AddEmptyOption()
