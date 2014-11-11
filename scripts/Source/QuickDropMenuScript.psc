@@ -316,7 +316,7 @@ State RememberPersistentItems
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Remember items with persistent references.\nThis option will allow you to remember and drop quest items and some other items that might not normally be remembered.\nUse carefully - dropping quest items might break quest progression.")
+		SetInfoText("Remember items with persistent references.\nThis option will allow you to remember and drop quest items and some other items that might not normally be remembered.\nUse carefully - dropping quest items might break quest progression. Also consider setting \"Show Message for Persistent Items.\"")
 	EndEvent
 EndState
 
@@ -393,19 +393,19 @@ State PickUpBehaviorRememberSome
 	EndEvent
 EndState
 
-State NotifyOnSkip
+State NotifyOnPersistent
 	Event OnSelectST()
-		QuickDropQuest.notifyOnSkip = !QuickDropQuest.notifyOnSkip
-		SetToggleOptionValueST(QuickDropQuest.notifyOnSkip)
+		QuickDropQuest.notifyOnPersistent = !QuickDropQuest.notifyOnPersistent
+		SetToggleOptionValueST(QuickDropQuest.notifyOnPersistent)
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.notifyOnSkip = False
+		QuickDropQuest.notifyOnPersistent = False
 		SetToggleOptionValueST(False)
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when an item picked up has not been remembered.\nSome types of items - for example, quest items - are not remembered by QuickDrop.")
+		SetInfoText("Display a message when an item picked up is persistent.\nPersistence is a property of certain significant items, notably quest items.\nDropping these items with QuickDrop may break quest progression.")
 	EndEvent
 EndState
 
