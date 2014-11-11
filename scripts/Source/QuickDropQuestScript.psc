@@ -84,7 +84,7 @@ Auto State Ready
 					SwapIndexToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
 
 					int i = 1
-					While i < 10 && indices[i] >= 0
+					While i < indices.Length && indices[i] >= 0
 						RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + RememberedQuantities[indices[i]]
 						RemoveIndexFromStack(indices[i])
 						i += 1
@@ -117,6 +117,53 @@ Auto State Ready
 
 		elseif notifyOnSkip
 			Debug.Notification("QuickDrop: " + akBaseItem.GetName() + " not remembered.")
+		endif
+		GoToState("Ready")
+	EndFunction
+
+	Function ForgetItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akDestContainer)
+		GoToState("Working")
+		if RememberedItems.Find(akBaseItem)	;If some of this item are remembered.
+			int[] indices = FindAllInstancesInStack(akBaseItem)
+			int totalRemembered = 0
+			int i = 0
+			While i < indices.Length && indices[i] >= 0
+				totalRemembered += RememberedQuantities[indices[i]]
+				i += 1
+			EndWhile
+
+			int numToForget = aiItemCount
+
+			if forgetOnRemoved	;If we're forgetting picked-up items first.
+				i = 0	;Start with the top stack index.
+				While i < indices.Length && indices[i] >= 0 && numToForget > 0
+					if numToForget >= RememberedQuantities[indices[i]]	;If this slot doesn't have enough to satisfy numToForget, or has just enough.
+						numToForget -= RememberedQuantities[indices[i]]
+						RemoveIndexFromStack(indices[i])	;Remove this slot. It was removed from the top, so remaining indices are still valid.
+					elseif numToForget < RememberedQuantities[indices[i]]	;If this slot does have enough to satsify numToForget.
+						RememberedQuantities[indices[i]] = RememberedQuantities[indices[i]] - numToForget	;Remove numToForget items from this slot.
+						numToForget = 0
+					endif
+					i += 1
+				EndWhile
+
+			elseif PlayerRef.GetItemCount(akBaseItem) < totalRemembered	;If we're forgetting picked-up items last and we don't have enough left to remember.
+				i -= 1	;Start with the bottom stack index.
+				While i >= 0 && numToForget > 0
+					if numToForget >= RememberedQuantities[indices[i]]	;If this slot doesn't have enough to satisfy numToForget, or has just enough.
+						numToForget -= RememberedQuantities[indices[i]]
+						RemoveIndexFromStack(indices[i])	;Remove this slot.
+						int j = i - 1	;This slot was removed from the bottom, so adjust our remaining stack indices, because they've all shifted down 1.
+						While j >= 0
+							indices[j] = GetPreviousStackIndex(indices[j])
+						EndWhile
+					elseif numToForget < RememberedQuantities[indices[i]]	;If this slot does have enough to satisfy numToForget.
+						RememberedQuantities[indices[i]] = RememberedQuantities[indices[i]] - numToForget	;Remove numToForget items from this slot.
+						numToForget = 0
+					endif
+					i -= 1
+				EndWhile
+			endif
 		endif
 		GoToState("Ready")
 	EndFunction
@@ -162,6 +209,10 @@ EndState
 
 Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 	{Don't attempt to remember additional items while not Ready.}
+EndFunction
+
+Function ForgetItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
+	{Don't attempt to forget additional items while not Ready.}
 EndFunction
 
 Function AdjustMaxRemembered(int newMaxRemembered)
