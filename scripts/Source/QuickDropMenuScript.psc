@@ -36,6 +36,7 @@ Function DrawAdvancedPage()
 	{Draw the "Advanced" settings page.}
 	AddHeaderOption("General")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
+	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
 	AddEmptyOption()
 	AddHeaderOption("On Item(s) Picked Up")
 	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
@@ -236,6 +237,22 @@ State MaxRemembered
 
 	Event OnHighlightST()
 		SetInfoText("Number of items to remember.\nThese form a stack of remembered items, with most recently picked up items on top.")
+	EndEvent
+EndState
+
+State RememberPersistentItems
+	Event OnSelectST()
+		QuickDropQuest.rememberPersistent = !QuickDropQuest.rememberPersistent
+		SetToggleOptionValueST(QuickDropQuest.rememberPersistent)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.rememberPersistent = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Remember items with persistent references.\nThis option will allow you to remember and drop quest items and some other items that might not normally be remembered.\nUse carefully - dropping quest items might break quest progression.")
 	EndEvent
 EndState
 
