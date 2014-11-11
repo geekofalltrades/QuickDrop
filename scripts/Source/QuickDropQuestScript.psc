@@ -185,7 +185,7 @@ Auto State Ready
 
 			if newPickUpBehavior == 1	;If we're changing to Remember to One Stack Slot.
 				int i = 0					;Remember all duplicate items so we can collapse them on next pickup.
-				While i < 9	;Search through the second-to-last array index.
+				While i < RememberedItems.Length - 1	;Search through the second-to-last array index.
 					if RememberedItems[i] != None && RememberedItems.Find(RememberedItems[i], i + 1) >= 0 && !QuickDropDuplicateItems.HasForm(RememberedItems[i])
 						QuickDropDuplicateItems.AddForm(RememberedItems[i])
 					endif
@@ -228,7 +228,7 @@ Event OnInit()
 	RememberedItems = new Form[10]
 	RememberedQuantities = new int[10]
 	int i = 0
-	While i < 10
+	While i < RememberedItems.Length
 		RememberedItems[i] = None
 		RememberedQuantities[i] = 0
 		i += 1
@@ -237,7 +237,7 @@ EndEvent
 
 Function RememberNewItem(Form itemToRemember, int quantityToRemember)
 	{Push a new item and quantity onto the stack.}
-	int newCurrentIndex = IncrementCurrentIndex()
+	IncrementCurrentIndex()
 	RememberedItems[currentIndex] = itemToRemember
 	RememberedQuantities[currentIndex] = quantityToRemember
 EndFunction
@@ -285,31 +285,31 @@ Function HandleDropAllHotkey()
 			QuickDropAllItemsDropped.Show()
 		endif
 		int i = 0
-		While i < 10
+		While i < RememberedItems.Length
 			if RememberedItems[i] != None
 				PlayerRef.DropObject(RememberedItems[i], RememberedQuantities[i])
 				RememberedItems[i] = None
 			endif
 			i += 1
 		EndWhile
-		currentIndex = 9	;Reset to 9 so the next call to IncrementCurrentIndex returns 0.
+		currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
 EndFunction
 
 Function HandleKeepAllHotkey()
-	{Drop all remembered items.}
+	{Keep all remembered items.}
 	if RememberedItems[currentIndex] != None
 		if notifyOnKeep
 			QuickDropAllItemsKept.Show()
 		endif
 		int i = 0
-		While i < 10
+		While i < RememberedItems.Length
 			RememberedItems[i] = None
 			i += 1
 		EndWhile
-		currentIndex = 9	;Reset to 9 so the next call to IncrementCurrentIndex returns 0.
+		currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
@@ -386,8 +386,8 @@ int[] Function FindAllInstancesInStack(Form searchFor)
 		i = GetPreviousStackIndex(i)
 	EndWhile
 
-	if resultsIndex < 10	;If we haven't filled the results array.
-		results[resultsIndex] = -1	;Terminate it with -1.
+	if resultsIndex < results.Length	;If we haven't filled the results array.
+		results[resultsIndex] = -1		;Terminate it with -1.
 	endif
 
 	return results
@@ -430,13 +430,13 @@ EndFunction
 Function AlignAndResizeStack(int newStackSize = -1)
 	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. Optionally re-size the stack.}
 	if RememberedItems[currentIndex] == None	;If the stack is empty.
-		currentIndex = 9							;Reset currentIndex so the next item remembered is at 0.
-	else										;If we have at least one item remembered.
+		currentIndex = RememberedItems.Length - 1	;Reset currentIndex so the next item remembered is at 0.
+	else 	;If we have at least one item remembered.
 		Form[] newItems = new Form[10]				;Build new, aligned stack arrays.
 		int[] newQuantities = new int[10]
 
 		int i = 0
-		While i < 10
+		While i < newItems.Length
 			newItems[i] = None
 			newQuantities[i] = 0
 			i += 1
@@ -448,10 +448,11 @@ Function AlignAndResizeStack(int newStackSize = -1)
 
 		int rememberedCount = CountRememberedItems()	;Count the number of items we currently have remembered.
 		if rememberedCount >= newStackSize	;If the currently remembered items match or overflow the stack size.
-			i = newStackSize - 1			;Then we start our stack at the highest allowed position.
+			i = newStackSize - 1				;Then we start our stack at the highest allowed position.
 		else								;If the currently remembered items don't fill the new limit.
 			i = rememberedCount - 1				;Then we start our stack as high as needed to accomodate all items.
 		endif
+		int newCurrentIndex = i
 
 		While i >= 0
 			newItems[i] = RememberedItems[currentIndex]
@@ -462,10 +463,6 @@ Function AlignAndResizeStack(int newStackSize = -1)
 
 		RememberedItems = newItems
 		RememberedQuantities = newQuantities
-		currentIndex = RememberedItems.Find(None) - 1
-
-		if currentIndex < 0	;Special case: the stack was aligned while it contained 10 items, and so contains no None.
-			currentIndex = 9
-		endif
+		currentIndex = newCurrentIndex
 	endif
 EndFunction
