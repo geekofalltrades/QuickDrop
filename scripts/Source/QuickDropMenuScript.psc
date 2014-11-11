@@ -42,6 +42,7 @@ Function DrawAdvancedPage()
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
 	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
 	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingStateToString())
+	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
 	AddEmptyOption()
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
@@ -300,6 +301,22 @@ State ToggleRemembering
 
 	Event OnHighlightST()
 		SetInfoText("While on, QuickDrop will remember new items that are added to your inventory. Turn off to freeze your stack of remembered items.\nCan be toggled in-game with the \"Toggle Remembering\" hotkey.")
+	EndEvent
+EndState
+
+State RememberPersistentItems
+	Event OnSelectST()
+		QuickDropQuest.rememberPersistent = !QuickDropQuest.rememberPersistent
+		SetToggleOptionValueST(QuickDropQuest.rememberPersistent)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.rememberPersistent = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Remember items with persistent references.\nThis option will allow you to remember and drop quest items and some other items that might not normally be remembered.\nUse carefully - dropping quest items might break quest progression.")
 	EndEvent
 EndState
 
