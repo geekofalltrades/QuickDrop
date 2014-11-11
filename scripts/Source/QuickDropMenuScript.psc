@@ -36,6 +36,7 @@ Function DrawAdvancedPage()
 	{Draw the "Advanced" settings page.}
 	AddHeaderOption("General")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
+	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering))
 	AddEmptyOption()
 	AddHeaderOption("On Item(s) Picked Up")
 	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
@@ -236,6 +237,30 @@ State MaxRemembered
 
 	Event OnHighlightST()
 		SetInfoText("Number of items to remember.\nThese form a stack of remembered items, with most recently picked up items on top.")
+	EndEvent
+EndState
+
+string Function ToggleRememberingBoolToString(bool remembering)
+	if remembering
+		return "ON"
+	else
+		return "OFF"
+	endif
+EndFunction
+
+State ToggleRemembering
+	Event OnSelectST()
+		QuickDropQuest.currentlyRemembering = !QuickDropQuest.currentlyRemembering
+		SetTextOptionValueST(ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering))
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.currentlyRemembering = True
+		SetTextOptionValueST(ToggleRememberingBoolToString(True))
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("While on, QuickDrop will remember new items that are added to your inventory. Turn off to freeze your stack of remembered items.\nCan be toggled in-game with the \"Toggle Remembering\" hotkey.")
 	EndEvent
 EndState
 

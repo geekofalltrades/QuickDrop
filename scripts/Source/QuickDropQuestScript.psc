@@ -32,6 +32,9 @@ bool Property notifyOnKeep = False Auto
 bool Property notifyOnSkip = False Auto
 {Whether or not to display a message when an item is skipped.}
 
+bool Property currentlyRemembering = True Auto
+{Whether or not QuickDrop is currently remembering new items as they are added.}
+
 int Property pickUpBehavior = 0 Auto
 {How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Only One.}
 
