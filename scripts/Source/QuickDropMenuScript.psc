@@ -29,6 +29,7 @@ Function DrawBasicPage()
 	AddKeymapOptionST("KeepHotkey", "Keep Current Item", QuickDropQuest.keepHotkey)
 	AddKeymapOptionST("DropAllHotkey", "Drop All Items", QuickDropQuest.dropAllHotkey)
 	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
+	AddKeymapOptionST("ToggleRememberingHotkey", "ToggleRemembering", QuickDropQuest.toggleRememberingHotkey)
 	DrawRememberedItems()
 EndFunction
 
@@ -81,9 +82,9 @@ bool Function CheckKeyConflict(string conflictControl, string conflictName)
 		else
 			msg = "This key is already mapped to " + conflictControl + " from Skyrim.\nAre you sure you want to continue?"
 		endif
-		return ShowMessage(msg, true, "Yes", "No")
+		return ShowMessage(msg, True, "Yes", "No")
 	endif
-	return true
+	return True
 EndFunction
 
 string Function GetCustomControl(int KeyCode)
@@ -97,6 +98,8 @@ string Function GetCustomControl(int KeyCode)
 		return "Drop All Items"
 	elseif KeyCode == QuickDropQuest.keepAllHotkey
 		return "Keep All Items"
+	elseif KeyCode == QuickDropQuest.toggleRememberingHotkey
+		return "Toggle Remembering"
 	endif
 	return ""
 EndFunction
@@ -109,6 +112,7 @@ Event OnConfigClose()
 	RegisterForKey(QuickDropQuest.keepHotkey)
 	RegisterForKey(QuickDropQuest.dropAllHotkey)
 	RegisterForKey(QuickDropQuest.keepAllHotkey)
+	RegisterForKey(QuickDropQuest.toggleRememberingHotkey)
 EndEvent
 
 State ShowHotkey
@@ -198,6 +202,24 @@ State KeepAllHotkey
 
 	Event OnHighlightST()
 		SetInfoText("Keep all remembered items.")
+	EndEvent
+EndState
+
+State ToggleRememberingHotkey
+	Event OnKeyMapChangeST(int keyCode, string conflictControl, string conflictName)
+		if CheckKeyConflict(conflictControl, conflictName)
+			QuickDropQuest.toggleRememberingHotkey = keyCode
+			SetKeymapOptionValueST(keyCode)
+		endif
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.toggleRememberingHotkey = -1
+		SetKeymapOptionValueST(-1)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Toggle item remembering on and off.\nWhen on, QuickDrop remembers new items as they're added to your inventory. When off, QuickDrop does not remember new items.\nCurrently " + ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering) + ".")
 	EndEvent
 EndState
 
