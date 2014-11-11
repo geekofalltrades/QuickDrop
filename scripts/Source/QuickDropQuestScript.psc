@@ -37,6 +37,9 @@ int Property dropAllHotkey = -1 Auto
 int Property keepAllHotkey = -1 Auto
 {Keep all remembered items.}
 
+int Property toggleRememberingHotkey = -1 Auto
+{Toggle remembering.}
+
 int Property maxRemembered = 5 Auto
 {The number of items to remember.}
 
