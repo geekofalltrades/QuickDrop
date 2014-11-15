@@ -26,7 +26,7 @@ COMPATIBILITY: No incompatibilities known.
 PERMISSIONS: Do not reupload this mod at sites other than Skyrim Nexus. If you alter this mod (by translating,
   adding functionality, etc) you may distribute it freely, so long as I am credited as its original author; in
   this case, I would prefer that it were made available at Skyrim Nexus. If you want to include this mod as
-  part of a larger compilation or bugfixing mod, please contact me.
+  part of a larger compilation, please contact me.
 
 CORRESPONDENCE: For general questions, comments, complaints, compliments, musings, propositions, reticulations,
   etc, please post to this mod's thread on the Skyrim Nexus forums. To contact me directly, please send me a
@@ -37,5 +37,7 @@ THANKS to Nexus Mods and to all contributors to the Creation Kit wiki and forums
 CHANGELOG:
   v1.1:
     * Fixed bug in case when "Remembered Items" slider was opened and closed with value of 10 and all stack slots full.
+    * Implemented the forgetting of items when those items were removed from your inventory outside of QuickDrop.
+    * Added the ability to toggle remembering of items on and off, both in-menu and with a hotkey.
   v1.0:
     * Initial release.
