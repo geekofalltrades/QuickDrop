@@ -1,6 +1,9 @@
 Scriptname QuickDropQuestScript extends Quest
 {QuickDrop main script.}
 
+QuickDropPlayerForgetScript Property ForgetScript Auto
+{The player script responsible for handling OnItemRemoved.}
+
 Actor Property PlayerRef Auto
 {Player reference.}
 
@@ -267,7 +270,9 @@ Function HandleDropHotkey()
 		if notifyOnDrop
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
 		endif
+		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved for this event.
 		PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
+		ForgetScript.GoToState("Enabled")
 		RememberedItems[currentIndex] = None
 		DecrementCurrentIndex()
 	else
@@ -304,6 +309,7 @@ Function HandleDropAllHotkey()
 			QuickDropAllItemsDropped.Show()
 		endif
 		int i = 0
+		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved for these event.
 		While i < RememberedItems.Length
 			if RememberedItems[i] != None
 				PlayerRef.DropObject(RememberedItems[i], RememberedQuantities[i])
@@ -311,6 +317,7 @@ Function HandleDropAllHotkey()
 			endif
 			i += 1
 		EndWhile
+		ForgetScript.GoToState("Enabled")
 		currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
 	else
 		QuickDropNoItemsRemembered.Show()
