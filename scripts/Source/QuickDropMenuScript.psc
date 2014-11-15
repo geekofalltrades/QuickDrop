@@ -4,6 +4,9 @@ Scriptname QuickDropMenuScript extends SKI_ConfigBase
 QuickDropQuestScript Property QuickDropQuest Auto
 {The main quest script.}
 
+QuickDropPlayerRememberScript Property RememberScript Auto
+{The player script responsible for OnItemAdded.}
+
 Event OnConfigInit()
 	{Perform menu setup.}
 	Pages = new string[2]
@@ -29,7 +32,7 @@ Function DrawBasicPage()
 	AddKeymapOptionST("KeepHotkey", "Keep Current Item", QuickDropQuest.keepHotkey)
 	AddKeymapOptionST("DropAllHotkey", "Drop All Items", QuickDropQuest.dropAllHotkey)
 	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
-	AddKeymapOptionST("ToggleRememberingHotkey", "ToggleRemembering", QuickDropQuest.toggleRememberingHotkey)
+	AddKeymapOptionST("ToggleRememberingHotkey", "Toggle Remembering", QuickDropQuest.toggleRememberingHotkey)
 	DrawRememberedItems()
 EndFunction
 
@@ -38,7 +41,7 @@ Function DrawAdvancedPage()
 	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
 	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
-	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering))
+	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingStateToString())
 	AddEmptyOption()
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnSkip)
@@ -219,7 +222,7 @@ State ToggleRememberingHotkey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Toggle item remembering on and off.\nWhen on, QuickDrop remembers new items as they're added to your inventory. When off, QuickDrop does not remember new items.\nCurrently " + ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering) + ".")
+		SetInfoText("Toggle item remembering on and off. (Currently " + ToggleRememberingStateToString() + ".)\nWhen on, QuickDrop remembers new items as they're added to your inventory.\nWhen off, QuickDrop does not remember new items.")
 	EndEvent
 EndState
 
@@ -272,8 +275,8 @@ State ForgetOnRemoved
 	EndEvent
 EndState
 
-string Function ToggleRememberingBoolToString(bool remembering)
-	if remembering
+string Function ToggleRememberingStateToString()
+	if RememberScript.GetState() == "Enabled"
 		return "ON"
 	else
 		return "OFF"
@@ -282,13 +285,17 @@ EndFunction
 
 State ToggleRemembering
 	Event OnSelectST()
-		QuickDropQuest.currentlyRemembering = !QuickDropQuest.currentlyRemembering
-		SetTextOptionValueST(ToggleRememberingBoolToString(QuickDropQuest.currentlyRemembering))
+		if RememberScript.GetState() == "Enabled"
+			RememberScript.GoToState("Disabled")
+		else
+			RememberScript.GoToState("Enabled")
+		endif
+		SetTextOptionValueST(ToggleRememberingStateToString())
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.currentlyRemembering = True
-		SetTextOptionValueST(ToggleRememberingBoolToString(True))
+		RememberScript.GoToState("Enabled")
+		SetTextOptionValueST(ToggleRememberingStateToString())
 	EndEvent
 
 	Event OnHighlightST()

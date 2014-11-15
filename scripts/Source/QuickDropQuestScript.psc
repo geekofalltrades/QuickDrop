@@ -4,6 +4,9 @@ Scriptname QuickDropQuestScript extends Quest
 QuickDropPlayerForgetScript Property ForgetScript Auto
 {The player script responsible for handling OnItemRemoved.}
 
+QuickDropPlayerRememberScript Property RememberScript Auto
+{The player script responsible for handling OnItemAdded.}
+
 Actor Property PlayerRef Auto
 {Player reference.}
 
@@ -58,9 +61,6 @@ bool Property notifyOnKeep = True Auto
 bool Property notifyOnSkip = False Auto
 {Whether or not to display a message when an item is skipped.}
 
-bool Property currentlyRemembering = True Auto
-{Whether or not QuickDrop is currently remembering new items as they are added.}
-
 int Property pickUpBehavior = 0 Auto
 {How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Only One.}
 
@@ -103,7 +103,7 @@ Auto State Ready
 
 	Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 		GoToState("Working")
-		if currentlyRemembering && akItemReference == None
+		if akItemReference == None
 			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
 				RememberNewItem(akBaseItem, aiItemCount)
 
@@ -356,12 +356,13 @@ Function HandleKeepAllHotkey()
 EndFunction
 
 Function HandleToggleRememberingHotkey()
-	{Toggle currentlyRemembering and display the appropriate message.}
-	currentlyRemembering = !currentlyRemembering
-	if currentlyRemembering
-		QuickDropRememberingOn.Show()
-	else
+	{Enable the remember script and display the appropriate message.}
+	if RememberScript.GetState() == "Enabled"
+		RememberScript.GoToState("Disabled")
 		QuickDropRememberingOff.Show()
+	else
+		RememberScript.GoToState("Enabled")
+		QuickDropRememberingOn.Show()
 	endif
 EndFunction
 
