@@ -11,5 +11,5 @@ EndEvent
 
 Event OnItemRemoved(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akDestContainer)
     {Pass along items dropped to the main script.}
-    QuickDropQuest.ForgetItems(akBaseItem, aiItemCount, akItemReference, akSourceContainer)
+    QuickDropQuest.ForgetItems(akBaseItem, aiItemCount, akItemReference, akDestContainer)
 EndEvent
