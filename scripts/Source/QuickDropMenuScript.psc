@@ -248,7 +248,6 @@ State MaxRemembered
 	EndEvent
 EndState
 
-<<<<<<< HEAD
 string Function ForgetOnRemovedBoolToString(bool value)
 	if value
 		return "Forget First"
