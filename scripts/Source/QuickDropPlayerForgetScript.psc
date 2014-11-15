@@ -12,5 +12,5 @@ Auto State Enabled
 EndState
 
 State Disabled
-	;Take no action when items are remembered.
+	;Take no action when items are dropped.
 EndState
