@@ -19,15 +19,29 @@ Message Property QuickDropAllItemsDropped Auto
 Message Property QuickDropAllItemsKept Auto
 {Message displayed when all items are kept.}
 
-;User input.
 int Property dropHotkey = -1 Auto
+{Drop the last remembered item(s).}
+
 int Property showHotkey = -1 Auto
+{Show the last remembered item(s).}
+
 int Property keepHotkey = -1 Auto
+{Keep the last remembered item(s).}
+
 int Property dropAllHotkey = -1 Auto
+{Drop all remembered items.}
+
 int Property keepAllHotkey = -1 Auto
+{Keep all remembered items.}
+
 int Property maxRemembered = 5 Auto
+{The number of items to remember.}
+
 bool Property notifyOnDrop = False Auto
-bool Property notifyOnKeep = False Auto
+{Whether or not to display a notification when an item is dropped.}
+
+bool Property notifyOnKeep = True Auto
+{Whether or not to display a notification when an item is kept.}
 
 bool Property notifyOnSkip = False Auto
 {Whether or not to display a message when an item is skipped.}
