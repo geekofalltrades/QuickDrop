@@ -137,7 +137,7 @@ Auto State Ready
 
 	Function ForgetItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akDestContainer)
 		GoToState("Working")
-		if RememberedItems.Find(akBaseItem)	;If some of this item are remembered.
+		if RememberedItems.Find(akBaseItem) >= 0	;If some of this item are remembered.
 			int[] indices = FindAllInstancesInStack(akBaseItem)
 			int totalRemembered = 0
 			int i = 0
@@ -170,6 +170,7 @@ Auto State Ready
 						int j = i - 1	;This slot was removed from the bottom, so adjust our remaining stack indices, because they've all shifted down 1.
 						While j >= 0
 							indices[j] = GetPreviousStackIndex(indices[j])
+							j -= 1
 						EndWhile
 					elseif numToForget < RememberedQuantities[indices[i]]	;If this slot does have enough to satisfy numToForget.
 						RememberedQuantities[indices[i]] = RememberedQuantities[indices[i]] - numToForget	;Remove numToForget items from this slot.
