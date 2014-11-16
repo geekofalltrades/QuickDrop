@@ -19,6 +19,9 @@ int[] Property RememberedQuantities Auto
 ObjectReference[] Property RememberedContainers Auto
 {The container the corresponding item came from, or None if from the world or container not remembered.}
 
+FormList Property QuickDropDuplicateItems Auto
+{Keep a list of items that are duplicated in the stack for use with Remember to One Stack Slot.}
+
 Message Property QuickDropNoItemsRemembered Auto
 {Message displayed when no more items are remembered.}
 
@@ -95,14 +98,12 @@ bool Property forgetOnRemoved = True Auto
 int Property currentIndex = 9 Auto
 {The index in RememberedItems of the last item picked up.}
 
-FormList Property QuickDropDuplicateItems Auto
-{Keep a list of items that are duplicated in the stack for use with Remember to One Stack Slot.}
-
 Event OnInit()
 	{Perform script setup.}
 	RememberedItems = new Form[10]
 	RememberedQuantities = new int[10]
 	RememberedContainers = new ObjectReference[10]
+
 	int i = 0
 	While i < RememberedItems.Length
 		RememberedItems[i] = None
@@ -144,77 +145,13 @@ Auto State Ready
 		GoToState("Working")
 		if akItemReference == None || rememberPersistent
 			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
-				int numToRemember = aiItemCount
-				int i = 0
-
-				if pickUpBehaviorModifier[0]
-					While numToRemember > pickUpBehaviorModifier[0] && i < maxRemembered
-						RememberNewItem(akBaseItem, pickUpBehaviorModifier[0], akSourceContainer)
-						numToRemember -= pickUpBehaviorModifier[0]
-						i += 1
-					EndWhile
-				endif
-
-				if numToRemember && i < maxRemembered
-					RememberNewItem(akBaseItem, numToRemember, akSourceContainer)
-				endif
-
+				HandleRememberAll(akBaseItem, aiItemCount, akSourceContainer)
 			elseif pickUpBehavior == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
-				int existingItemIndex
-
-				if QuickDropDuplicateItems.HasForm(akBaseItem)	;If this type of item currently occupies two or more slots in the stack.
-					int[] indices = FindAllInstancesInStack(akBaseItem)	;Get a list of the stack slots occupied by this item.
-					SwapIndexToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
-
-					int i = 1
-					While i < indices.Length && indices[i] >= 0	;Add all other slots to the first one.
-						RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + RememberedQuantities[indices[i]]
-						RemoveIndexFromStack(indices[i])
-						i += 1
-					EndWhile
-
-					if pickUpBehaviorModifier[1] && RememberedQuantities[currentIndex] > pickUpBehaviorModifier[1]	;If we have more remembered than we're allowed, remove some.
-						RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
-					endif
-
-					QuickDropDuplicateItems.RemoveAddedForm(akBaseItem)	;Remove this item from the list of duplicates.
-					existingItemIndex = currentIndex	;Record that this item is now on the top of the stack.
-				else	;If this item occupies one or no slots in the stack.
-					existingItemIndex = RememberedItems.Find(akBaseItem)	;Search for this item in the stack.
-				endif
-
-				if existingItemIndex < 0	;If we don't already have this item in the stack.
-					if !pickUpBehaviorModifier[1] || aiItemCount <= pickUpBehaviorModifier[1]
-						RememberNewItem(akBaseItem, aiItemCount, akSourceContainer)
-					else
-						RememberNewItem(akBaseItem, pickUpBehaviorModifier[1], akSourceContainer)
-					endif
-				else						;If we do have this item in the stack somewhere.
-					SwapIndexToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
-					if !pickUpBehaviorModifier[1] || RememberedQuantities[currentIndex] + aiItemCount <= pickUpBehaviorModifier[1]
-						RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + aiItemCount
-					else
-						RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
-					endif
-				endif
-
+				HandleCollapseAll(akBaseItem, aiItemCount, akSourceContainer)
 			elseif pickUpBehavior == 2	;Remember as many individual instances of the item as we can.
-				int numToRemember
-				if !pickUpBehaviorModifier[2] || pickUpBehaviorModifier[2] > aiItemCount
-					numToRemember = aiItemCount
-				else
-					numToRemember = pickUpBehaviorModifier[2]
-				endif
-
-				int i = 0
-				While i < numToRemember && i < maxRemembered
-					RememberNewItem(akBaseItem, 1, akSourceContainer)
-					i += 1
-				EndWhile
-
-			elseif pickUpBehavior == 3	;Remember only sone instances of the item.
-				RememberNewItem(akBaseItem, pickUpBehaviorModifier[3], akSourceContainer)
-
+				HandleRememberEach(akBaseItem, aiItemCount, akSourceContainer)
+			elseif pickUpBehavior == 3	;Remember only some instances of the item.
+				HandleRememberSome(akBaseItem, aiItemCount, akSourceContainer)
 			endif
 
 			if notifyOnPersistent && akItemReference != None
@@ -335,29 +272,17 @@ Function AdjustPickUpBehavior(int newPickUpBehavior)
 	{Don't adjust pickUpBehavior while not Ready.}
 EndFunction
 
-Function RememberNewItem(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
-	{Push a new item onto the stack.}
-	IncrementCurrentIndex()
-	RememberedItems[currentIndex] = itemToRemember
-	RememberedQuantities[currentIndex] = quantityToRemember
-	if rememberContainer || replaceInContainer
-		RememberedContainers[currentIndex] = containerToRemember
-	else
-		RememberedContainers[currentIndex] = None
-	endif
-EndFunction
-
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if RememberedItems[currentIndex] != None
 		if notifyOnDrop
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
 		endif
+
 		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved for this event.
-		PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
+		DropRememberedItem()
 		ForgetScript.GoToState("Enabled")
-		RememberedItems[currentIndex] = None
-		DecrementCurrentIndex()
+
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
@@ -378,8 +303,8 @@ Function HandleKeepHotkey()
 		if notifyOnKeep
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") kept.")
 		endif
-		RememberedItems[currentIndex] = None
-		DecrementCurrentIndex()
+
+		RemoveIndexFromStack(currentIndex)
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
@@ -391,16 +316,13 @@ Function HandleDropAllHotkey()
 		if notifyOnDrop
 			QuickDropAllItemsDropped.Show()
 		endif
-		int i = 0
-		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved for these event.
-		While i < RememberedItems.Length
-			if RememberedItems[i] != None
-				PlayerRef.DropObject(RememberedItems[i], RememberedQuantities[i])
-				RememberedItems[i] = None
-			endif
-			i += 1
+
+		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved for these events.
+		While RememberedItems[currentIndex] != None
+			DropRememberedItem()
 		EndWhile
 		ForgetScript.GoToState("Enabled")
+
 		currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
 	else
 		QuickDropNoItemsRemembered.Show()
@@ -413,11 +335,11 @@ Function HandleKeepAllHotkey()
 		if notifyOnKeep
 			QuickDropAllItemsKept.Show()
 		endif
-		int i = 0
-		While i < RememberedItems.Length
-			RememberedItems[i] = None
-			i += 1
+
+		While RememberedItems[currentIndex] != None
+			RemoveIndexFromStack(currentIndex)
 		EndWhile
+
 		currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
 	else
 		QuickDropNoItemsRemembered.Show()
@@ -433,6 +355,113 @@ Function HandleToggleRememberingHotkey()
 		RememberScript.GoToState("Enabled")
 		QuickDropRememberingOn.Show()
 	endif
+EndFunction
+
+Function HandleRememberAll(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+	{Remember the stack of items picked up to one stack slot, or in multiple stacks according to the modifier.}
+	int i = 0
+
+	if pickUpBehaviorModifier[0]
+		While quantityToRemember > pickUpBehaviorModifier[0] && i < maxRemembered
+			RememberNewItem(itemToRemember, pickUpBehaviorModifier[0], containerToRemember)
+			quantityToRemember -= pickUpBehaviorModifier[0]
+			i += 1
+		EndWhile
+	endif
+
+	if quantityToRemember && i < maxRemembered
+		RememberNewItem(itemToRemember, quantityToRemember, containerToRemember)
+	endif
+EndFunction
+
+Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+	{Remember the stack of items picked up in a combined stack slot of this type, up to the amount allowed by the modifier.}
+	int existingItemIndex
+
+	if QuickDropDuplicateItems.HasForm(itemToRemember)	;If this type of item currently occupies two or more slots in the stack.
+		int[] indices = FindAllInstancesInStack(itemToRemember)	;Get a list of the stack slots occupied by this item.
+		SwapIndexToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
+
+		int i = 1
+		While i < indices.Length && indices[i] >= 0	;Add all other slots to the first one.
+			RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + RememberedQuantities[indices[i]]
+			RemoveIndexFromStack(indices[i])
+			i += 1
+		EndWhile
+
+		RememberedContainers[currentIndex] = None	;Clear any replacement data, as it's no longer valid.
+
+		if pickUpBehaviorModifier[1] && RememberedQuantities[currentIndex] > pickUpBehaviorModifier[1]	;If we have more remembered than we're allowed, forget some.
+			RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
+		endif
+
+		QuickDropDuplicateItems.RemoveAddedForm(itemToRemember)	;Remove this item from the list of duplicates.
+		existingItemIndex = currentIndex	;Record that this item is now on the top of the stack.
+	else	;If this item occupies one or no slots in the stack.
+		existingItemIndex = RememberedItems.Find(itemToRemember)	;Search for this item in the stack.
+	endif
+
+	if existingItemIndex < 0	;If we don't already have this item in the stack.
+		;Remember replacement data until we combine stack slots, as it will be valid until then.
+		if !pickUpBehaviorModifier[1] || quantityToRemember <= pickUpBehaviorModifier[1]
+			RememberNewItem(itemToRemember, quantityToRemember, containerToRemember)
+		else
+			RememberNewItem(itemToRemember, pickUpBehaviorModifier[1], containerToRemember)
+		endif
+	else						;If we do have this item in the stack somewhere.
+		SwapIndexToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
+		if !pickUpBehaviorModifier[1] || RememberedQuantities[currentIndex] + quantityToRemember <= pickUpBehaviorModifier[1]
+			RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + quantityToRemember
+		else
+			RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
+		endif
+		RememberedContainers[currentIndex] = None	;Clear any replacement data, as it's no longer valid.
+	endif
+EndFunction
+
+Function HandleRememberEach(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+	{Remember the items individually, up to the amount allowed by the modifier.}
+	if pickUpBehaviorModifier[2] && pickUpBehaviorModifier[2] < quantityToRemember
+		quantityToRemember = pickUpBehaviorModifier[2]
+	endif
+
+	int i = 0
+	While i < quantityToRemember && i < maxRemembered
+		RememberNewItem(itemToRemember, 1, containerToRemember)
+		i += 1
+	EndWhile
+EndFunction
+
+Function HandleRememberSome(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+	{Remember in one stack some of these items, as allowed by the modifier.}
+	RememberNewItem(itemToRemember, pickUpBehaviorModifier[3], containerToRemember)
+EndFunction
+
+Function RememberNewItem(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+	{Push a new item onto the stack.}
+	IncrementCurrentIndex()
+	RememberedItems[currentIndex] = itemToRemember
+	RememberedQuantities[currentIndex] = quantityToRemember
+	if rememberContainer || replaceInContainer
+		RememberedContainers[currentIndex] = containerToRemember
+	else
+		RememberedContainers[currentIndex] = None
+	endif
+EndFunction
+
+Function DropRememberedItem(int index = -1)
+	{Pop an item off the stack and drop/replace it. Take care to properly manipulate the states of ForgetScript before calling this function.}
+	if index == -1
+		index = currentIndex
+	endif
+
+	if replaceInContainer && RememberedContainers[index] != None
+		PlayerRef.RemoveItem(RememberedItems[index], RememberedQuantities[index], True, RememberedContainers[index])
+	else
+		PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index])
+	endif
+
+	RemoveIndexFromStack(index)
 EndFunction
 
 int Function GetNextStackIndex(int index = -1)
@@ -531,9 +560,11 @@ Function RemoveIndexFromStack(int index)
 		int nextIndex = GetNextStackIndex(index)
 		RememberedItems[index] = RememberedItems[nextIndex]
 		RememberedQuantities[index] = RememberedQuantities[nextIndex]
+		RememberedContainers[index] = RememberedContainers[nextIndex]
 		index = nextIndex
 	EndWhile
 	RememberedItems[currentIndex] = None	;Clear the top item of the stack.
+	RememberedContainers[currentIndex] = None
 	DecrementCurrentIndex()
 EndFunction
 
@@ -546,6 +577,10 @@ Function SwapIndices(int indexOne, int indexTwo)
 	int tempQuantity = RememberedQuantities[indexOne]
 	RememberedQuantities[indexOne] = RememberedQuantities[indexTwo]
 	RememberedQuantities[indexTwo] = tempQuantity
+
+	ObjectReference tempContainer = RememberedContainers[indexOne]
+	RememberedContainers[indexOne] = RememberedContainers[indexTwo]
+	RememberedContainers[indexTwo] = tempContainer
 EndFunction
 
 Function AlignAndResizeStack(int newStackSize = -1)
@@ -555,11 +590,13 @@ Function AlignAndResizeStack(int newStackSize = -1)
 	else 	;If we have at least one item remembered.
 		Form[] newItems = new Form[10]				;Build new, aligned stack arrays.
 		int[] newQuantities = new int[10]
+		ObjectReference[] newContainers = new ObjectReference[10]
 
 		int i = 0
 		While i < newItems.Length
 			newItems[i] = None
 			newQuantities[i] = 0
+			newContainers[i] = None
 			i += 1
 		EndWhile
 
@@ -567,23 +604,25 @@ Function AlignAndResizeStack(int newStackSize = -1)
 			newStackSize = maxRemembered
 		endif
 
-		int rememberedCount = CountRememberedItems()	;Count the number of items we currently have remembered.
-		if rememberedCount >= newStackSize	;If the currently remembered items match or overflow the stack size.
+		int rememberedCount = CountRememberedItems()	;Count the number of slots we currently have filled.
+		if rememberedCount >= newStackSize	;If the currently occupied slots match or overflow the stack size.
 			i = newStackSize - 1				;Then we start our stack at the highest allowed position.
-		else								;If the currently remembered items don't fill the new limit.
-			i = rememberedCount - 1				;Then we start our stack as high as needed to accomodate all items.
+		else								;If the currently occupied slots don't fill the new limit.
+			i = rememberedCount - 1				;Then we start our stack as high as needed to accomodate all slots.
 		endif
 		int newCurrentIndex = i
 
 		While i >= 0
 			newItems[i] = RememberedItems[currentIndex]
 			newQuantities[i] = RememberedQuantities[currentIndex]
+			newContainers[i] = RememberedContainers[currentIndex]
 			DecrementCurrentIndex()
 			i -= 1
 		EndWhile
 
 		RememberedItems = newItems
 		RememberedQuantities = newQuantities
+		RememberedContainers = newContainers
 		currentIndex = newCurrentIndex
 	endif
 EndFunction
