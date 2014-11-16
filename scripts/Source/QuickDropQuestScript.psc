@@ -16,6 +16,9 @@ Form[] Property RememberedItems Auto
 int[] Property RememberedQuantities Auto
 {The quantity of the corresponding RememberedItem remembered.}
 
+ObjectReference[] Property RememberedContainers Auto
+{The container the corresponding item came from, or None if from the world or container not remembered.}
+
 Message Property QuickDropNoItemsRemembered Auto
 {Message displayed when no more items are remembered.}
 
@@ -99,10 +102,12 @@ Event OnInit()
 	{Perform script setup.}
 	RememberedItems = new Form[10]
 	RememberedQuantities = new int[10]
+	RememberedContainers = new ObjectReference[10]
 	int i = 0
 	While i < RememberedItems.Length
 		RememberedItems[i] = None
 		RememberedQuantities[i] = 0
+		RememberedContainers[i] = None
 		i += 1
 	EndWhile
 
@@ -144,14 +149,14 @@ Auto State Ready
 
 				if pickUpBehaviorModifier[0]
 					While numToRemember > pickUpBehaviorModifier[0] && i < maxRemembered
-						RememberNewItem(akBaseItem, pickUpBehaviorModifier[0])
+						RememberNewItem(akBaseItem, pickUpBehaviorModifier[0], akSourceContainer)
 						numToRemember -= pickUpBehaviorModifier[0]
 						i += 1
 					EndWhile
 				endif
 
 				if numToRemember && i < maxRemembered
-					RememberNewItem(akBaseItem, numToRemember)
+					RememberNewItem(akBaseItem, numToRemember, akSourceContainer)
 				endif
 
 			elseif pickUpBehavior == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
@@ -180,9 +185,9 @@ Auto State Ready
 
 				if existingItemIndex < 0	;If we don't already have this item in the stack.
 					if !pickUpBehaviorModifier[1] || aiItemCount <= pickUpBehaviorModifier[1]
-						RememberNewItem(akBaseItem, aiItemCount)
+						RememberNewItem(akBaseItem, aiItemCount, akSourceContainer)
 					else
-						RememberNewItem(akBaseItem, pickUpBehaviorModifier[1])
+						RememberNewItem(akBaseItem, pickUpBehaviorModifier[1], akSourceContainer)
 					endif
 				else						;If we do have this item in the stack somewhere.
 					SwapIndexToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
@@ -203,12 +208,12 @@ Auto State Ready
 
 				int i = 0
 				While i < numToRemember && i < maxRemembered
-					RememberNewItem(akBaseItem, 1)
+					RememberNewItem(akBaseItem, 1, akSourceContainer)
 					i += 1
 				EndWhile
 
 			elseif pickUpBehavior == 3	;Remember only sone instances of the item.
-				RememberNewItem(akBaseItem, pickUpBehaviorModifier[3])
+				RememberNewItem(akBaseItem, pickUpBehaviorModifier[3], akSourceContainer)
 
 			endif
 
@@ -330,11 +335,16 @@ Function AdjustPickUpBehavior(int newPickUpBehavior)
 	{Don't adjust pickUpBehavior while not Ready.}
 EndFunction
 
-Function RememberNewItem(Form itemToRemember, int quantityToRemember)
-	{Push a new item and quantity onto the stack.}
+Function RememberNewItem(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+	{Push a new item onto the stack.}
 	IncrementCurrentIndex()
 	RememberedItems[currentIndex] = itemToRemember
 	RememberedQuantities[currentIndex] = quantityToRemember
+	if rememberContainer || replaceInContainer
+		RememberedContainers[currentIndex] = containerToRemember
+	else
+		RememberedContainers[currentIndex] = None
+	endif
 EndFunction
 
 Function HandleDropHotkey()
@@ -508,9 +518,10 @@ Function SwapIndexToTop(int index)
 	if index != currentIndex	;No-op if this index is already the top of the stack.
 		Form itemToTop = RememberedItems[index]
 		int quantityToTop = RememberedQuantities[index]
+		ObjectReference containerToTop = RememberedContainers[index]
 
 		RemoveIndexFromStack(index)
-		RememberNewItem(itemToTop, quantityToTop)
+		RememberNewItem(itemToTop, quantityToTop, containerToTop)
 	endif
 EndFunction
 
