@@ -58,14 +58,17 @@ int Property toggleRememberingHotkey = -1 Auto
 int Property maxRemembered = 5 Auto
 {The number of items to remember.}
 
+bool Property notifyOnPersistent = False Auto
+{Whether or not to display a message when an item is skipped.}
+
 bool Property notifyOnDrop = False Auto
 {Whether or not to display a notification when an item is dropped.}
 
+bool Property notifyOnReplaceInContainer = True Auto
+{Whether or not to display a notification when an item is replaced in its original container.}
+
 bool Property notifyOnKeep = True Auto
 {Whether or not to display a notification when an item is kept.}
-
-bool Property notifyOnPersistent = False Auto
-{Whether or not to display a message when an item is skipped.}
 
 bool Property rememberPersistent = False Auto
 {Whether or not to remember (and therefore be able to drop) items with persistent references, like quest items.}
@@ -275,7 +278,9 @@ EndFunction
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if RememberedItems[currentIndex] != None
-		if notifyOnDrop
+		if notifyOnReplaceInContainer && replaceInContainer && RememberedContainers[currentIndex] != None
+			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
+		elseif notifyOnDrop && (!replaceInContainer || RememberedContainers[currentIndex] == None)
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
 		endif
 
@@ -313,7 +318,23 @@ EndFunction
 Function HandleDropAllHotkey()
 	{Drop all remembered items.}
 	if RememberedItems[currentIndex] != None
-		if notifyOnDrop
+		bool notify = False
+		if notifyOnReplaceInContainer
+			;See if any items are about to be replaced in containers. Mock a do-while structure.
+			if RememberedContainers[currentIndex] != None
+				notify = True
+			endif
+
+			int i = GetPreviousStackIndex(currentIndex)
+			While i != currentIndex && !notify
+				if RememberedContainers[i] != None
+					notify = True
+				endif
+				i = GetPreviousStackIndex(i)
+			EndWhile
+		endif
+
+		if notifyOnDrop || notify
 			QuickDropAllItemsDropped.Show()
 		endif
 
