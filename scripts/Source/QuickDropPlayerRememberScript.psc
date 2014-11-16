@@ -1,5 +1,5 @@
 Scriptname QuickDropPlayerRememberScript Extends ReferenceAlias
-{QuickDrop player script.}
+{QuickDrop player script for remembering items OnItemAdded.}
 
 QuickDropQuestScript Property QuickDropQuest Auto
 {A reference to the quest script.}
