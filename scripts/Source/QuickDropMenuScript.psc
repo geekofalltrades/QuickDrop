@@ -45,9 +45,10 @@ Function DrawAdvancedPage()
 	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
 	AddEmptyOption()
 	AddHeaderOption("Notifications")
-	AddToggleOptionST("NotifyOnPersistent", "Show Message for Persistent Items", QuickDropQuest.notifyOnPersistent)
-	AddToggleOptionST("NotifyOnDrop", "Show Message when Item Dropped", QuickDropQuest.notifyOnDrop)
-	AddToggleOptionST("NotifyOnKeep", "Show Message when Item Kept", QuickDropQuest.notifyOnKeep)
+	AddToggleOptionST("NotifyOnPersistent", "Persistent Items", QuickDropQuest.notifyOnPersistent)
+	AddToggleOptionST("NotifyOnDrop", "Item Dropped", QuickDropQuest.notifyOnDrop)
+	AddToggleOptionST("NotifyOnReplaceInContainer", "Item Replaced in Container", QuickDropQuest.notifyOnReplaceInContainer)
+	AddToggleOptionST("NotifyOnKeep", "Item Kept", QuickDropQuest.notifyOnKeep)
 	SetCursorPosition(1)
 	AddHeaderOption("On Item(s) Picked Up")
 	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
@@ -502,6 +503,22 @@ State NotifyOnDrop
 
 	Event OnHighlightST()
 		SetInfoText("Display a message when the current item is dropped.")
+	EndEvent
+EndState
+
+State NotifyOnReplaceInContainer
+	Event OnSelectST()
+		QuickDropQuest.notifyOnReplaceInContainer = !QuickDropQuest.notifyOnReplaceInContainer
+		SetToggleOptionValueST(QuickDropQuest.notifyOnReplaceInContainer)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.notifyOnReplaceInContainer = True
+		SetToggleOptionValueST(True)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Display a message when the current item is replaced in its original container.")
 	EndEvent
 EndState
 
