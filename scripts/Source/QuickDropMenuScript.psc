@@ -45,7 +45,7 @@ Function DrawAdvancedPage()
 	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
 	AddEmptyOption()
 	AddHeaderOption("Notifications")
-	AddToggleOptionST("NotifyOnSkip", "Show Message for Skipped Items", QuickDropQuest.notifyOnPersistent)
+	AddToggleOptionST("NotifyOnPersistent", "Show Message for Persistent Items", QuickDropQuest.notifyOnPersistent)
 	AddToggleOptionST("NotifyOnDrop", "Show Message when Item Dropped", QuickDropQuest.notifyOnDrop)
 	AddToggleOptionST("NotifyOnKeep", "Show Message when Item Kept", QuickDropQuest.notifyOnKeep)
 	SetCursorPosition(1)
@@ -300,7 +300,7 @@ State ToggleRemembering
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("While on, QuickDrop will remember new items that are added to your inventory. Turn off to freeze your stack of remembered items.\nCan be toggled in-game with the \"Toggle Remembering\" hotkey.")
+		SetInfoText("While on, QuickDrop will remember new items that are added to your inventory.\nTurn off to freeze your stack of remembered items.\nCan be toggled in-game with the \"Toggle Remembering\" hotkey.")
 	EndEvent
 EndState
 
@@ -316,7 +316,7 @@ State RememberPersistentItems
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Remember items with persistent references.\nThis option will allow you to remember and drop quest items and some other items that might not normally be remembered.\nUse carefully - dropping quest items might break quest progression. Also consider setting \"Show Message for Persistent Items.\"")
+		SetInfoText("Remember items with persistent references. This option allows QuickDrop to remember and drop quest items\nand some other items that might not normally be remembered. Use carefully - dropping quest items might break\nquest progression. Also consider setting \"Show Message for Persistent Items.\"")
 	EndEvent
 EndState
 
@@ -405,7 +405,7 @@ State NotifyOnPersistent
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when an item picked up is persistent.\nPersistence is a property of certain significant items, notably quest items.\nDropping these items with QuickDrop may break quest progression.")
+		SetInfoText("Display a message when an item picked up has a persistent reference.\nPersistence is a property of certain significant items, notably quest items.\nDropping these items with QuickDrop may break quest progression.")
 	EndEvent
 EndState
 
