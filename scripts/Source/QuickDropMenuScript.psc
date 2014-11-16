@@ -54,6 +54,7 @@ Function DrawAdvancedPage()
 	AddToggleOptionST("PickUpBehaviorCollapseAll", "Remember to One Stack Slot", QuickDropQuest.pickUpBehavior == 1)
 	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
 	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
+	AddSliderOptionST("PickUpBehaviorModifier", "Modifier (Hover for Details)", QuickDropQuest.PickUpBehaviorModifier[QuickDropQuest.pickUpBehavior])
 EndFunction
 
 Function DrawRememberedItems()
@@ -322,19 +323,21 @@ EndState
 
 Function PickUpBehaviorOnSelect(int option)
 	QuickDropQuest.AdjustPickUpBehavior(option)
-	SetToggleOptionValueST(option == 0, true, "PickUpBehaviorRememberAll")
-	SetToggleOptionValueST(option == 1, true, "PickUpBehaviorCollapseAll")
-	SetToggleOptionValueST(option == 2, true, "PickUpBehaviorRememberEach")
-	SetToggleOptionValueST(option == 3, false, "PickUpBehaviorRememberSome")
+	SetToggleOptionValueST(option == 0, True, "PickUpBehaviorRememberAll")
+	SetToggleOptionValueST(option == 1, True, "PickUpBehaviorCollapseAll")
+	SetToggleOptionValueST(option == 2, True, "PickUpBehaviorRememberEach")
+	SetToggleOptionValueST(option == 3, True, "PickUpBehaviorRememberSome")
+	SetSliderOptionValueSt(QuickDropQuest.pickUpBehaviorModifier[option], "{0}", False, "PickUpBehaviorModifier")
 EndFunction
 
 Function PickUpBehaviorOnDefault()
 	{Reset the PickUpBehavior option group to its defaults.}
 	QuickDropQuest.AdjustPickUpBehavior(0)
-	SetToggleOptionValueST(true, true, "PickUpBehaviorRememberAll")
-	SetToggleOptionValueST(false, true, "PickUpBehaviorCollapseAll")
-	SetToggleOptionValueST(false, true, "PickUpBehaviorRememberEach")
-	SetToggleOptionValueST(false, false, "PickUpBehaviorRememberSome")
+	SetToggleOptionValueST(true, True, "PickUpBehaviorRememberAll")
+	SetToggleOptionValueST(false, True, "PickUpBehaviorCollapseAll")
+	SetToggleOptionValueST(false, True, "PickUpBehaviorRememberEach")
+	SetToggleOptionValueST(false, True, "PickUpBehaviorRememberSome")
+	SetSliderOptionValueSt(QuickDropQuest.pickUpBehaviorModifier[0], "{0}", False, "PickUpBehaviorModifier")
 EndFunction
 
 State PickUpBehaviorRememberAll
@@ -390,6 +393,47 @@ State PickUpBehaviorRememberSome
 
 	Event OnHighlightST()
 		SetInfoText("When item(s) are picked up, remember only some in one stack slot.\nThe rest go into your inventory without being remembered.")
+	EndEvent
+EndState
+
+State PickUpBehaviorModifier
+	Event OnSliderOpenST()
+		if QuickDropQuest.pickUpBehavior == 3
+			SetSliderDialogDefaultValue(1.0)
+			SetSliderDialogRange(1.0, 100.0)
+		else
+			SetSliderDialogDefaultValue(0.0)
+			SetSliderDialogRange(0.0, 100.0)
+		endif
+		SetSliderDialogStartValue(QuickDropQuest.pickUpBehaviorModifier[QuickDropQuest.pickUpBehavior])
+		SetSliderDialogInterval(1.0)
+	EndEvent
+
+	Event OnSliderAcceptST(float value)
+		QuickDropQuest.pickUpBehaviorModifier[QuickDropQuest.pickUpBehavior] = value as int
+		SetSliderOptionValueST(value, "{0}")
+	EndEvent
+
+	Event OnDefaultST()
+		if QuickDropQuest.pickUpBehavior == 3
+			QuickDropQuest.pickUpBehaviorModifier[3] = 1
+			SetSliderOptionValueSt(1.0, "{0}")
+		else
+			QuickDropQuest.pickUpBehaviorModifier[QuickDropQuest.pickUpBehavior] = 0
+			SetSliderOptionValueSt(0.0, "{0}")
+		endif
+	EndEvent
+
+	Event OnHighlightST()
+		if QuickDropQuest.pickUpBehavior == 0
+			SetInfoText("The maximum number of items to remember in one stack slot. 0 means no limit.\nItems beyond these overflow into a new stack slot.\n")
+		elseif QuickDropQuest.pickUpBehavior == 1
+			SetInfoText("The maximum number of items to remember in the combined stack slot. 0 means no limit.\nItems beyond these are not remembered.")
+		elseif QuickDropQuest.pickUpBehavior == 2
+			SetInfoText("The maximum number of items to remember individually. 0 means no limit.")
+		elseif QuickDropQuest.pickUpBehavior == 3
+			SetInfoText("The maximum number of items to remember in one stack slot.\nItems beyond these are not remembered.")
+		endif
 	EndEvent
 EndState
 
