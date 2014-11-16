@@ -133,7 +133,20 @@ Auto State Ready
 		GoToState("Working")
 		if akItemReference == None || rememberPersistent
 			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
-				RememberNewItem(akBaseItem, aiItemCount)
+				int numToRemember = aiItemCount
+				int i = 0
+
+				if pickUpBehaviorModifier[0]
+					While numToRemember > pickUpBehaviorModifier[0] && i < maxRemembered
+						RememberNewItem(akBaseItem, pickUpBehaviorModifier[0])
+						numToRemember -= pickUpBehaviorModifier[0]
+						i += 1
+					EndWhile
+				endif
+
+				if numToRemember && i < maxRemembered
+					RememberNewItem(akBaseItem, numToRemember)
+				endif
 
 			elseif pickUpBehavior == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
 				int existingItemIndex
@@ -143,11 +156,15 @@ Auto State Ready
 					SwapIndexToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
 
 					int i = 1
-					While i < indices.Length && indices[i] >= 0
+					While i < indices.Length && indices[i] >= 0	;Add all other slots to the first one.
 						RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + RememberedQuantities[indices[i]]
 						RemoveIndexFromStack(indices[i])
 						i += 1
 					EndWhile
+
+					if pickUpBehaviorModifier[1] && RememberedQuantities[currentIndex] > pickUpBehaviorModifier[1]	;If we have more remembered than we're allowed, remove some.
+						RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
+					endif
 
 					QuickDropDuplicateItems.RemoveAddedForm(akBaseItem)	;Remove this item from the list of duplicates.
 					existingItemIndex = currentIndex	;Record that this item is now on the top of the stack.
@@ -156,21 +173,36 @@ Auto State Ready
 				endif
 
 				if existingItemIndex < 0	;If we don't already have this item in the stack.
-					RememberNewItem(akBaseItem, aiItemCount)	;Add it to the top.
+					if !pickUpBehaviorModifier[1] || aiItemCount <= pickUpBehaviorModifier[1]
+						RememberNewItem(akBaseItem, aiItemCount)
+					else
+						RememberNewItem(akBaseItem, pickUpBehaviorModifier[1])
+					endif
 				else						;If we do have this item in the stack somewhere.
 					SwapIndexToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
-					RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + aiItemCount
+					if !pickUpBehaviorModifier[1] || RememberedQuantities[currentIndex] + aiItemCount <= pickUpBehaviorModifier[1]
+						RememberedQuantities[currentIndex] = RememberedQuantities[currentIndex] + aiItemCount
+					else
+						RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
+					endif
 				endif
 
 			elseif pickUpBehavior == 2	;Remember as many individual instances of the item as we can.
+				int numToRemember
+				if !pickUpBehaviorModifier[2] || pickUpBehaviorModifier[2] > aiItemCount
+					numToRemember = aiItemCount
+				else
+					numToRemember = pickUpBehaviorModifier[2]
+				endif
+
 				int i = 0
-				While i < aiItemCount && i < maxRemembered
+				While i < numToRemember && i < maxRemembered
 					RememberNewItem(akBaseItem, 1)
 					i += 1
 				EndWhile
 
-			elseif pickUpBehavior == 3	;Remember only one instance of the item.
-				RememberNewItem(akBaseItem, 1)
+			elseif pickUpBehavior == 3	;Remember only sone instances of the item.
+				RememberNewItem(akBaseItem, pickUpBehaviorModifier[3])
 
 			endif
 
