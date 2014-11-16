@@ -65,7 +65,14 @@ bool Property rememberPersistent = False Auto
 {Whether or not to remember (and therefore be able to drop) items with persistent references, like quest items.}
 
 int Property pickUpBehavior = 0 Auto
-{How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Only One.}
+{How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Some.}
+
+int[] Property pickUpBehaviorModifier Auto
+{Modifier for pickUpBehavior. Contains one value for each of the four possible pickUpBehavior settings.}
+;The modifier for 0 (Remember All) tells QuickDrop how many items to put in one stack before overflowing into a new stack.
+;The modifier for 1 (Collapse All) tells QuickDrop how many items to put in the shared stack slot, maximum.
+;The modifier for 2 (Remember Each) tells QuickDrop how many items to remember individually, maximum.
+;The modifier for 3 (Remember Some) tells QuickDrop how many items to remember in one slot before putting the rest into inventory.
 
 bool Property forgetOnRemoved = True Auto
 {How to forget items when removed separately. True = Forget first, False = Forget last.}
@@ -81,6 +88,24 @@ int Property currentIndex = 9 Auto
 
 FormList Property QuickDropDuplicateItems Auto
 {Keep a list of items that are duplicated in the stack for use with Remember to One Stack Slot.}
+
+Event OnInit()
+	{Perform script setup.}
+	RememberedItems = new Form[10]
+	RememberedQuantities = new int[10]
+	int i = 0
+	While i < RememberedItems.Length
+		RememberedItems[i] = None
+		RememberedQuantities[i] = 0
+		i += 1
+	EndWhile
+
+	pickUpBehaviorModifier = new int[4]
+	pickUpBehaviorModifier[0] = 0
+	pickUpBehaviorModifier[1] = 0
+	pickUpBehaviorModifier[2] = 0
+	pickUpBehaviorModifier[3] = 1
+EndEvent
 
 Auto State Ready
 	Event OnKeyDown(int KeyCode)
@@ -266,18 +291,6 @@ EndFunction
 Function AdjustPickUpBehavior(int newPickUpBehavior)
 	{Don't adjust pickUpBehavior while not Ready.}
 EndFunction
-
-Event OnInit()
-	{Perform script setup.}
-	RememberedItems = new Form[10]
-	RememberedQuantities = new int[10]
-	int i = 0
-	While i < RememberedItems.Length
-		RememberedItems[i] = None
-		RememberedQuantities[i] = 0
-		i += 1
-	EndWhile
-EndEvent
 
 Function RememberNewItem(Form itemToRemember, int quantityToRemember)
 	{Push a new item and quantity onto the stack.}
