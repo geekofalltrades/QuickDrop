@@ -64,6 +64,12 @@ bool Property notifyOnPersistent = False Auto
 bool Property rememberPersistent = False Auto
 {Whether or not to remember (and therefore be able to drop) items with persistent references, like quest items.}
 
+bool Property replaceInContainer = False Auto
+{Whether or not to replace items in their original containers.}
+
+bool Property rememberContainer = False Auto
+{Whether or not to remember containers items come from. Implied by replaceInContainer.}
+
 int Property pickUpBehavior = 0 Auto
 {How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Some.}
 

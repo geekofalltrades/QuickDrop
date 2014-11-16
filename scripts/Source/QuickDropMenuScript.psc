@@ -55,6 +55,10 @@ Function DrawAdvancedPage()
 	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
 	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
 	AddSliderOptionST("PickUpBehaviorModifier", "Modifier (Hover for Details)", QuickDropQuest.PickUpBehaviorModifier[QuickDropQuest.pickUpBehavior])
+	AddEmptyOption()
+	AddHeaderOption("On Item(s) Dropped")
+	AddToggleOptionST("ReplaceInContainer", "Replace in Original Container", QuickDropQuest.replaceInContainer)
+	AddToggleOptionST("RememberContainer", "Always Remember Containers", QuickDropQuest.rememberContainer)
 EndFunction
 
 Function DrawRememberedItems()
@@ -434,6 +438,38 @@ State PickUpBehaviorModifier
 		elseif QuickDropQuest.pickUpBehavior == 3
 			SetInfoText("The maximum number of items to remember in one stack slot.\nItems beyond these are not remembered.")
 		endif
+	EndEvent
+EndState
+
+State ReplaceInContainer
+	Event OnSelectST()
+		QuickDropQuest.replaceInContainer = !QuickDropQuest.replaceInContainer
+		SetToggleOptionValueST(QuickDropQuest.replaceInContainer)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.replaceInContainer = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("If the item(s) dropped came from a container, replace them in that container.\nThis makes containers into persistent references, which causes some script/savegame bloat.")
+	EndEvent
+EndState
+
+State RememberContainer
+	Event OnSelectST()
+		QuickDropQuest.rememberContainer = !QuickDropQuest.rememberContainer
+		SetToggleOptionValueST(QuickDropQuest.rememberContainer)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.rememberContainer = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Always remember the container item(s) came from, even if \"Replace In Container\" is disabled.\nThis allows you to replace items in containers even if \"Replace In Container\" wasn't enabled when you picked them up.\nThis makes containers into persistent references, which causes some script/savegame bloat.")
 	EndEvent
 EndState
 
