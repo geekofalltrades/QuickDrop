@@ -11,7 +11,7 @@ Actor Property PlayerRef Auto
 {Player reference.}
 
 Form[] Property RememberedItems Auto
-{Remembered items, stored on the quest.}
+{Remembered items.}
 
 int[] Property RememberedQuantities Auto
 {The quantity of the corresponding RememberedItem remembered.}
@@ -58,6 +58,16 @@ int Property toggleRememberingHotkey = -1 Auto
 int Property maxRemembered = 5 Auto
 {The number of items to remember.}
 
+bool Property forgetOnRemoved = True Auto
+{How to forget items when removed separately. True = Forget first, False = Forget last.}
+;Forget first means treat any items removed from the inventory as the most recent ones picked up. They're removed from the remembered
+;items stack from the top down, even if there are enough left in the inventory to remember.
+;Forget last means treat any items removed from the inventory as the least recent ones picked up. They're removed from the remembered
+;items stack from the bottom up, starting only when there aren't enough left in the inventory to remember.
+
+bool Property rememberPersistent = False Auto
+{Whether or not to remember (and therefore be able to drop) items with persistent references, like quest items.}
+
 bool Property notifyOnPersistent = False Auto
 {Whether or not to display a message when an item is skipped.}
 
@@ -70,15 +80,6 @@ bool Property notifyOnReplaceInContainer = True Auto
 bool Property notifyOnKeep = True Auto
 {Whether or not to display a notification when an item is kept.}
 
-bool Property rememberPersistent = False Auto
-{Whether or not to remember (and therefore be able to drop) items with persistent references, like quest items.}
-
-bool Property replaceInContainer = False Auto
-{Whether or not to replace items in their original containers.}
-
-bool Property rememberContainer = False Auto
-{Whether or not to remember containers items come from. Implied by replaceInContainer.}
-
 int Property pickUpBehavior = 0 Auto
 {How to handle multiple items. 0 = Remember All, 1 = Collapse All, 2 = Remember Each, 3 = Remember Some.}
 
@@ -89,12 +90,14 @@ int[] Property pickUpBehaviorModifier Auto
 ;The modifier for 2 (Remember Each) tells QuickDrop how many items to remember individually, maximum.
 ;The modifier for 3 (Remember Some) tells QuickDrop how many items to remember in one slot before putting the rest into inventory.
 
-bool Property forgetOnRemoved = True Auto
-{How to forget items when removed separately. True = Forget first, False = Forget last.}
-;Forget first means treat any items removed from the inventory as the most recent ones picked up. They're removed from the remembered
-;items stack from the top down, even if there are enough left in the inventory to remember.
-;Forget last means treat any items removed from the inventory as the least recent ones picked up. They're removed from the remembered
-;items stack from the bottom up, starting only when there aren't enough left in the inventory to remember.
+bool Property replaceInContainer = False Auto
+{Whether or not to replace items in their original containers.}
+
+int Property replaceInContainerDistance = 250 Auto
+{The distance at which you're allowed to replace items in containers.}
+
+bool Property rememberContainer = False Auto
+{Whether or not to remember containers items come from. Implied by replaceInContainer.}
 
 ;Remember the index of the current item.
 ;Start it at 9 so that the first call to IncrementCurrentIndex sets it back to 0.
@@ -278,9 +281,9 @@ EndFunction
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if RememberedItems[currentIndex] != None
-		if notifyOnReplaceInContainer && replaceInContainer && RememberedContainers[currentIndex] != None
+		if notifyOnReplaceInContainer && replaceInContainer && RememberedContainers[currentIndex] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[currentIndex]) <= replaceInContainerDistance)
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
-		elseif notifyOnDrop && (!replaceInContainer || RememberedContainers[currentIndex] == None)
+		elseif notifyOnDrop && (!replaceInContainer || RememberedContainers[currentIndex] == None || (replaceInContainerDistance && PlayerRef.GetDistance(RememberedContainers[currentIndex]) > replaceInContainerDistance))
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
 		endif
 
@@ -321,7 +324,7 @@ Function HandleDropAllHotkey()
 		bool notify = False
 		if notifyOnReplaceInContainer
 			;See if any items are about to be replaced in containers. Mock a do-while structure.
-			if RememberedContainers[currentIndex] != None
+			if RememberedContainers[currentIndex] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[currentIndex]) <= replaceInContainerDistance)
 				notify = True
 			endif
 
@@ -476,7 +479,7 @@ Function DropRememberedItem(int index = -1)
 		index = currentIndex
 	endif
 
-	if replaceInContainer && RememberedContainers[index] != None
+	if replaceInContainer && RememberedContainers[index] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[index]) <= replaceInContainerDistance)
 		PlayerRef.RemoveItem(RememberedItems[index], RememberedQuantities[index], True, RememberedContainers[index])
 	else
 		PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index])
