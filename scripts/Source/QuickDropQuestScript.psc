@@ -96,6 +96,9 @@ bool Property replaceInContainer = False Auto
 int Property replaceInContainerDistance = 250 Auto
 {The distance at which you're allowed to replace items in containers.}
 
+bool Property replaceInContainerDropOnFail = True Auto
+{Whether or not to drop an item if it can't be replaced in its container.}
+
 bool Property rememberContainer = False Auto
 {Whether or not to remember containers items come from. Implied by replaceInContainer.}
 
@@ -281,9 +284,9 @@ EndFunction
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if RememberedItems[currentIndex] != None
-		if notifyOnReplaceInContainer && replaceInContainer && RememberedContainers[currentIndex] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[currentIndex]) <= replaceInContainerDistance)
+		if notifyOnReplaceInContainer && replaceInContainer && CanReplaceInContainer()
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
-		elseif notifyOnDrop && (!replaceInContainer || RememberedContainers[currentIndex] == None || (replaceInContainerDistance && PlayerRef.GetDistance(RememberedContainers[currentIndex]) > replaceInContainerDistance))
+		elseif notifyOnDrop && !CanReplaceInContainer()
 			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
 		endif
 
@@ -322,15 +325,15 @@ Function HandleDropAllHotkey()
 	{Drop all remembered items.}
 	if RememberedItems[currentIndex] != None
 		bool notify = False
-		if notifyOnReplaceInContainer
+		if replaceInContainer && notifyOnReplaceInContainer
 			;See if any items are about to be replaced in containers. Mock a do-while structure.
-			if RememberedContainers[currentIndex] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[currentIndex]) <= replaceInContainerDistance)
+			if CanReplaceInContainer()
 				notify = True
 			endif
 
 			int i = GetPreviousStackIndex(currentIndex)
 			While i != currentIndex && !notify
-				if RememberedContainers[i] != None
+				if CanReplaceInContainer(i)
 					notify = True
 				endif
 				i = GetPreviousStackIndex(i)
@@ -479,13 +482,26 @@ Function DropRememberedItem(int index = -1)
 		index = currentIndex
 	endif
 
-	if replaceInContainer && RememberedContainers[index] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[index]) <= replaceInContainerDistance)
+	if replaceInContainer && CanReplaceInContainer()
 		PlayerRef.RemoveItem(RememberedItems[index], RememberedQuantities[index], True, RememberedContainers[index])
 	else
 		PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index])
 	endif
 
 	RemoveIndexFromStack(index)
+EndFunction
+
+bool Function CanReplaceInContainer(int index = -1)
+	{Determines whether the item at index can currently be replaced in its container.}
+	if index < 0
+		index = currentIndex
+	endif
+
+	if RememberedContainers[index] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[index]) <= replaceInContainerDistance)
+		return True
+	endif
+
+	return False
 EndFunction
 
 int Function GetNextStackIndex(int index = -1)

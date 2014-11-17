@@ -60,6 +60,7 @@ Function DrawAdvancedPage()
 	AddHeaderOption("On Item(s) Dropped")
 	AddToggleOptionST("ReplaceInContainer", "Replace in Container", QuickDropQuest.replaceInContainer)
 	AddSliderOptionST("ReplaceInContainerDistance", "Replace in Container Distance", QuickDropQuest.replaceInContainerDistance, "{0}")
+	AddToggleOptionST("ReplaceInContainerDropOnFail", "Drop if Can't Replace in Container", QuickDropQuest.replaceInContainerDropOnFail)
 	AddToggleOptionST("RememberContainer", "Always Remember Containers", QuickDropQuest.rememberContainer)
 EndFunction
 
@@ -479,6 +480,22 @@ State ReplaceInContainerDistance
 
 	Event OnHighlightST()
 		SetInfoText("The maximum distance from which you can replace an item in its original container.\n0 means from any distance.")
+	EndEvent
+EndState
+
+State ReplaceInContainerDropOnFail
+	Event OnSelectST()
+		QuickDropQuest.replaceInContainerDropOnFail = !QuickDropQuest.replaceInContainerDropOnFail
+		SetToggleOptionValueST(QuickDropQuest.replaceInContainerDropOnFail)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.replaceInContainerDropOnFail = True
+		SetToggleOptionValueST(True)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("If the current item(s) can't be replaced in its container, drop it instead.")
 	EndEvent
 EndState
 
