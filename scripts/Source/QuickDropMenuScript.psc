@@ -58,7 +58,8 @@ Function DrawAdvancedPage()
 	AddSliderOptionST("PickUpBehaviorModifier", "Modifier (Hover for Details)", QuickDropQuest.PickUpBehaviorModifier[QuickDropQuest.pickUpBehavior])
 	AddEmptyOption()
 	AddHeaderOption("On Item(s) Dropped")
-	AddToggleOptionST("ReplaceInContainer", "Replace in Original Container", QuickDropQuest.replaceInContainer)
+	AddToggleOptionST("ReplaceInContainer", "Replace in Container", QuickDropQuest.replaceInContainer)
+	AddSliderOptionST("ReplaceInContainerDistance", "Replace in Container Distance", QuickDropQuest.replaceInContainerDistance, "{0}")
 	AddToggleOptionST("RememberContainer", "Always Remember Containers", QuickDropQuest.rememberContainer)
 EndFunction
 
@@ -455,6 +456,29 @@ State ReplaceInContainer
 
 	Event OnHighlightST()
 		SetInfoText("If the item(s) dropped came from a container, replace them in that container.\nThis makes containers into persistent references, which causes some script/savegame bloat.")
+	EndEvent
+EndState
+
+State ReplaceInContainerDistance
+	Event OnSliderOpenST()
+		SetSliderDialogStartValue(QuickDropQuest.replaceInContainerDistance)
+		SetSliderDialogDefaultValue(250.0)
+		SetSliderDialogRange(0.0, 5000.0)
+		SetSliderDialogInterval(50.0)
+	EndEvent
+
+	Event OnSliderAcceptST(float value)
+		QuickDropQuest.replaceInContainerDistance = value as int
+		SetSliderOptionValueST(value, "{0}")
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.replaceInContainerDistance = 250
+		SetSliderOptionValueSt(250.0, "{0}")
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("The maximum distance from which you can replace an item in its original container.\n0 means from any distance.")
 	EndEvent
 EndState
 
