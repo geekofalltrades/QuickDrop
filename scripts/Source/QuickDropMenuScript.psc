@@ -9,22 +9,36 @@ QuickDropPlayerRememberScript Property RememberScript Auto
 
 Event OnConfigInit()
 	{Perform menu setup.}
-	Pages = new string[2]
-	Pages[0] = "Basic"
-	Pages[1] = "Advanced"
+	Pages = new string[5]
+	Pages[0] = "Stack"
+	Pages[1] = "Hotkeys"
+	Pages[2] = "Settings"
+	Pages[3] = "Pickup/Drop"
+	Pages[4] = "Replace"
 EndEvent
 
 Event OnPageReset(string page)
 	{Draw the menu.}
 	SetCursorFillMode(TOP_TO_BOTTOM)
-	if page == "Basic"
-		DrawBasicPage()
-	elseif page == "Advanced"
-		DrawAdvancedPage()
+	if page == "Stack"
+		DrawStackPage()
+	elseif page == "Hotkeys"
+		DrawHotkeysPage()
+	elseif page == "Settings"
+		DrawSettingsPage()
+	elseif page == "Pickup/Drop"
+		DrawPickupDropPage()
+	elseif page == "Replace"
+		DrawReplacePage()
 	endif
 EndEvent
 
-Function DrawBasicPage()
+Function DrawStackPage()
+	{Draw the "Stack" settings page.}
+	DrawRememberedItems()
+EndFunction
+
+Function DrawHotkeysPage()
 	{Draw the "Basic" settings page.}
 	AddHeaderOption("Hotkeys")
 	AddKeymapOptionST("ShowHotkey", "Show Current Item", QuickDropQuest.showHotkey)
@@ -33,10 +47,9 @@ Function DrawBasicPage()
 	AddKeymapOptionST("DropAllHotkey", "Drop All Items", QuickDropQuest.dropAllHotkey)
 	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
 	AddKeymapOptionST("ToggleRememberingHotkey", "Toggle Remembering", QuickDropQuest.toggleRememberingHotkey)
-	DrawRememberedItems()
 EndFunction
 
-Function DrawAdvancedPage()
+Function DrawSettingsPage()
 	{Draw the "Advanced" settings page.}
 	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
@@ -46,22 +59,31 @@ Function DrawAdvancedPage()
 	AddEmptyOption()
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnPersistent", "Persistent Items", QuickDropQuest.notifyOnPersistent)
-	AddToggleOptionST("NotifyOnDrop", "Item Dropped", QuickDropQuest.notifyOnDrop)
-	AddToggleOptionST("NotifyOnReplaceInContainer", "Item Replaced in Container", QuickDropQuest.notifyOnReplaceInContainer)
-	AddToggleOptionST("NotifyOnKeep", "Item Kept", QuickDropQuest.notifyOnKeep)
-	SetCursorPosition(1)
-	AddHeaderOption("On Item(s) Picked Up")
+EndFunction
+
+Function DrawPickupDropPage()
+	{Draw the "Pickup/Drop" settings page.}
+	AddHeaderOption("Remembering Picked Up Items")
 	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
 	AddToggleOptionST("PickUpBehaviorCollapseAll", "Remember to One Stack Slot", QuickDropQuest.pickUpBehavior == 1)
 	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
 	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
 	AddSliderOptionST("PickUpBehaviorModifier", "Modifier (Hover for Details)", QuickDropQuest.PickUpBehaviorModifier[QuickDropQuest.pickUpBehavior])
-	AddEmptyOption()
-	AddHeaderOption("On Item(s) Dropped")
+	SetCursorPosition(1)
+	AddHeaderOption("Notifications")
+	AddToggleOptionST("NotifyOnDrop", "Item Dropped", QuickDropQuest.notifyOnDrop)
+	AddToggleOptionST("NotifyOnKeep", "Item Kept", QuickDropQuest.notifyOnKeep)
+EndFunction
+
+Function DrawReplacePage()
+	AddHeaderOption("Replace Items in Containers")
 	AddToggleOptionST("ReplaceInContainer", "Replace in Container", QuickDropQuest.replaceInContainer)
 	AddSliderOptionST("ReplaceInContainerDistance", "Replace in Container Distance", QuickDropQuest.replaceInContainerDistance, "{0}")
 	AddToggleOptionST("ReplaceInContainerDropOnFail", "Drop if Can't Replace in Container", QuickDropQuest.replaceInContainerDropOnFail)
 	AddToggleOptionST("RememberContainer", "Always Remember Containers", QuickDropQuest.rememberContainer)
+	SetCursorPosition(1)
+	AddHeaderOption("Notifications")
+	AddToggleOptionST("NotifyOnReplaceInContainer", "Item Replaced in Container", QuickDropQuest.notifyOnReplaceInContainer)
 EndFunction
 
 Function DrawRememberedItems()
