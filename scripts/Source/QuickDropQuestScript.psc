@@ -164,12 +164,11 @@ Auto State Ready
 			endif
 
 			if notifyOnPersistent && akItemReference != None
-				if rememberPersistent
-					Debug.Notification("QuickDrop: Remembered persistent " + akBaseItem.GetName() + ".")
-				else
-					Debug.Notification("QuickDrop: Persistent " + akBaseItem.GetName() + " not remembered.")
-				endif
+				Debug.Notification("QuickDrop: Remembered persistent " + akBaseItem.GetName() + ".")
 			endif
+
+		elseif notifyOnPersistent
+			Debug.Notification("QuickDrop: Persistent " + akBaseItem.GetName() + " not remembered.")
 		endif
 		GoToState("Ready")
 	EndFunction
