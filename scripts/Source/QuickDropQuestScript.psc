@@ -541,21 +541,6 @@ Function RememberNewItem(Form itemToRemember, int quantityToRemember, ObjectRefe
 	endif
 EndFunction
 
-Function DropRememberedItem(int index = -1)
-	{Pop an item off the stack and drop/replace it. Take care to properly manipulate the states of ForgetScript before calling this function.}
-	if index == -1
-		index = currentIndex
-	endif
-
-	if replaceInContainer && CanReplaceInContainer()
-		PlayerRef.RemoveItem(RememberedItems[index], RememberedQuantities[index], True, RememberedContainers[index])
-	else
-		PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index])
-	endif
-
-	RemoveIndexFromStack(index)
-EndFunction
-
 bool Function CanReplaceInContainer(int index = -1)
 	{Determines whether the item at index can currently be replaced in its container.}
 	if index < 0
