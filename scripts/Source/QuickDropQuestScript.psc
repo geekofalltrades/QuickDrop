@@ -28,6 +28,9 @@ Message Property QuickDropNoItemsRemembered Auto
 Message Property QuickDropAllItemsDropped Auto
 {Message displayed when all items are dropped.}
 
+Message Property QuickDropSomeItemsDropped Auto
+{Message displayed when the Drop All Hotkey fails to drop some items.}
+
 Message Property QuickDropAllItemsKept Auto
 {Message displayed when all items are kept.}
 
@@ -76,6 +79,9 @@ bool Property notifyOnDrop = False Auto
 
 bool Property notifyOnReplaceInContainer = True Auto
 {Whether or not to display a notification when an item is replaced in its original container.}
+
+bool Property notifyOnFailToReplaceInContainer = False Auto
+{Whether or not to display a notification when an item can't be replaced in its original container.}
 
 bool Property notifyOnKeep = True Auto
 {Whether or not to display a notification when an item is kept.}
@@ -283,14 +289,42 @@ EndFunction
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if RememberedItems[currentIndex] != None
-		if notifyOnReplaceInContainer && replaceInContainer && CanReplaceInContainer()
-			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
-		elseif notifyOnDrop && !CanReplaceInContainer()
-			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
+		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved when this item is dropped.
+
+		if replaceInContainer && RememberedContainers[currentIndex] != None	;We're replacing items in containers and have a container to replace to.
+			if CanReplaceInContainer()
+				if notifyOnReplaceInContainer
+					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
+				endif
+
+				PlayerRef.RemoveItem(RememberedItems[currentIndex], RememberedQuantities[currentIndex], True, RememberedContainers[currentIndex])
+				RemoveIndexFromStack()
+
+			else
+				if notifyOnFailToReplaceInContainer
+					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") could not be replaced in container.")
+				endif
+
+				if replaceInContainerDropOnFail
+					if notifyOnDrop
+						Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
+					endif
+
+					PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
+					RemoveIndexFromStack()
+				endif
+			endif
+
+		else	;We're not replacing items or don't have a place to replace this item to.
+			if notifyOnDrop
+				Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
+			endif
+
+			PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
+			RemoveIndexFromStack()
+
 		endif
 
-		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved for this event.
-		DropRememberedItem()
 		ForgetScript.GoToState("Enabled")
 
 	else
@@ -321,37 +355,69 @@ Function HandleKeepHotkey()
 EndFunction
 
 Function HandleDropAllHotkey()
-	{Drop all remembered items.}
+	{Drop/replace all remembered items. Operates as if we're attempting a drop/replace on each individual item.}
 	if RememberedItems[currentIndex] != None
-		bool notify = False
-		if replaceInContainer && notifyOnReplaceInContainer
-			;See if any items are about to be replaced in containers. Mock a do-while structure.
-			if CanReplaceInContainer()
-				notify = True
+		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved when these items are dropped.
+
+		int notify = 0	;What type of notification to display for this action.
+		int i = currentIndex
+		int iterations = 0
+		int terminate = CountRememberedItems()	;Stop after this many iterations.
+
+		While iterations < terminate
+			if replaceInContainer && RememberedContainers[i] != None	;We're replacing items in containers and have a container to replace to.
+				if CanReplaceInContainer()
+					if notifyOnReplaceInContainer && notify < 2
+						notify = 1
+					endif
+
+					PlayerRef.RemoveItem(RememberedItems[i], RememberedQuantities[i], True, RememberedContainers[i])
+					RemoveIndexFromStack(i)
+
+				else
+					if replaceInContainerDropOnFail
+						if notifyOnDrop && notify < 2
+							notify = 1
+						endif
+
+						PlayerRef.DropObject(RememberedItems[i], RememberedQuantities[i])
+						RemoveIndexFromStack(i)
+
+					elseif notifyOnFailToReplaceInContainer	;Special-case notification: some items couldn't be dropped/replaced.
+						notify = 2
+
+					endif
+				endif
+
+			else	;We're not replacing items or don't have a place to replace this item to.
+				if notifyOnDrop && notify < 2
+					notify = 1
+				endif
+
+				PlayerRef.DropObject(RememberedItems[i], RememberedQuantities[i])
+				RemoveIndexFromStack(i)
+
 			endif
 
-			int i = GetPreviousStackIndex(currentIndex)
-			While i != currentIndex && !notify
-				if CanReplaceInContainer(i)
-					notify = True
-				endif
-				i = GetPreviousStackIndex(i)
-			EndWhile
-		endif
-
-		if notifyOnDrop || notify
-			QuickDropAllItemsDropped.Show()
-		endif
-
-		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved for these events.
-		While RememberedItems[currentIndex] != None
-			DropRememberedItem()
+			i = GetPreviousStackIndex(i)
+			iterations += 1
 		EndWhile
+
 		ForgetScript.GoToState("Enabled")
 
-		currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
+		if notify == 1
+			QuickDropAllItemsDropped.Show()
+		elseif notify == 2
+			QuickDropSomeItemsDropped.Show()
+		endif
+
+		if RememberedItems[currentIndex] == None	;If we succeeded in clearing the entire stack.
+			currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
+		endif
+
 	else
 		QuickDropNoItemsRemembered.Show()
+
 	endif
 EndFunction
 
@@ -593,8 +659,12 @@ Function SwapIndexToTop(int index)
 	endif
 EndFunction
 
-Function RemoveIndexFromStack(int index)
+Function RemoveIndexFromStack(int index = -1)
 	{Remove the item(s) at index from the stack, shifting others down into its place. Doesn't check if index is within stack bounds - make sure to verify this!}
+	if index < 0
+		index = currentIndex
+	endif
+
 	While index != currentIndex		;Shift stack down, overwriting this index.
 		int nextIndex = GetNextStackIndex(index)
 		RememberedItems[index] = RememberedItems[nextIndex]
@@ -602,6 +672,7 @@ Function RemoveIndexFromStack(int index)
 		RememberedContainers[index] = RememberedContainers[nextIndex]
 		index = nextIndex
 	EndWhile
+
 	RememberedItems[currentIndex] = None	;Clear the top item of the stack.
 	RememberedContainers[currentIndex] = None
 	DecrementCurrentIndex()
