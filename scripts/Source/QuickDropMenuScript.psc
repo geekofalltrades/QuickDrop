@@ -49,24 +49,27 @@ Function DrawGeneralSettingsPage()
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
 	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
 	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingStateToString())
-	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
-	AddEmptyOption()
-	AddHeaderOption("Notifications")
-	AddToggleOptionST("NotifyOnPersistent", "Persistent Items", QuickDropQuest.notifyOnPersistent)
 EndFunction
 
 Function DrawPickupDropPage()
 	{Draw the "Pickup/Drop" settings page.}
 	AddHeaderOption("Remembering Picked Up Items")
 	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
+	AddSliderOptionST("PickUpBehaviorRememberAllModifier", "    Max Per Slot", QuickDropQuest.PickUpBehaviorModifier[0])
 	AddToggleOptionST("PickUpBehaviorCollapseAll", "Remember to One Stack Slot", QuickDropQuest.pickUpBehavior == 1)
+	AddSliderOptionST("PickUpBehaviorCollapseAllModifier", "    Max In Combined Slot", QuickDropQuest.PickUpBehaviorModifier[1])
 	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
+	AddSliderOptionST("PickUpBehaviorRememberEachModifier", "    Max To Remember", QuickDropQuest.PickUpBehaviorModifier[2])
 	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
-	AddSliderOptionST("PickUpBehaviorModifier", "Modifier (Hover for Details)", QuickDropQuest.PickUpBehaviorModifier[QuickDropQuest.pickUpBehavior])
+	AddSliderOptionST("PickUpBehaviorRememberSomeModifier", "    Max To Remember", QuickDropQuest.PickUpBehaviorModifier[3])
+	AddEmptyOption()
+	AddHeaderOption("Persistent Items")
+	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
 	SetCursorPosition(1)
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnDrop", "Item Dropped", QuickDropQuest.notifyOnDrop)
 	AddToggleOptionST("NotifyOnKeep", "Item Kept", QuickDropQuest.notifyOnKeep)
+	AddToggleOptionST("NotifyOnPersistent", "Persistent Items", QuickDropQuest.notifyOnPersistent)
 EndFunction
 
 Function DrawReplacePage()
@@ -341,7 +344,7 @@ State RememberPersistentItems
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Remember items with persistent references. This option allows QuickDrop to remember and drop quest items\nand some other items that might not normally be remembered. Use carefully - dropping quest items might break\nquest progression. Also consider setting \"Show Message for Persistent Items.\"")
+		SetInfoText("Remember items with persistent references. This option allows QuickDrop to remember and drop quest items\nand some other items that might not normally be remembered. Use carefully - dropping quest items might break\nquest progression. Also consider setting the \"Persistent Items\" notification.")
 	EndEvent
 EndState
 
@@ -350,18 +353,16 @@ Function PickUpBehaviorOnSelect(int option)
 	SetToggleOptionValueST(option == 0, True, "PickUpBehaviorRememberAll")
 	SetToggleOptionValueST(option == 1, True, "PickUpBehaviorCollapseAll")
 	SetToggleOptionValueST(option == 2, True, "PickUpBehaviorRememberEach")
-	SetToggleOptionValueST(option == 3, True, "PickUpBehaviorRememberSome")
-	SetSliderOptionValueSt(QuickDropQuest.pickUpBehaviorModifier[option], "{0}", False, "PickUpBehaviorModifier")
+	SetToggleOptionValueST(option == 3, False, "PickUpBehaviorRememberSome")
 EndFunction
 
 Function PickUpBehaviorOnDefault()
 	{Reset the PickUpBehavior option group to its defaults.}
 	QuickDropQuest.AdjustPickUpBehavior(0)
-	SetToggleOptionValueST(true, True, "PickUpBehaviorRememberAll")
-	SetToggleOptionValueST(false, True, "PickUpBehaviorCollapseAll")
-	SetToggleOptionValueST(false, True, "PickUpBehaviorRememberEach")
-	SetToggleOptionValueST(false, True, "PickUpBehaviorRememberSome")
-	SetSliderOptionValueSt(QuickDropQuest.pickUpBehaviorModifier[0], "{0}", False, "PickUpBehaviorModifier")
+	SetToggleOptionValueST(True, True, "PickUpBehaviorRememberAll")
+	SetToggleOptionValueST(False, True, "PickUpBehaviorCollapseAll")
+	SetToggleOptionValueST(False, True, "PickUpBehaviorRememberEach")
+	SetToggleOptionValueST(False, False, "PickUpBehaviorRememberSome")
 EndFunction
 
 State PickUpBehaviorRememberAll
@@ -375,6 +376,29 @@ State PickUpBehaviorRememberAll
 
 	Event OnHighlightST()
 		SetInfoText("When item(s) are picked up, remember the item and the quantity picked up in one stack slot.\nItem(s) of the same type picked up separately occupy their own stack slots.")
+	EndEvent
+EndState
+
+State PickUpBehaviorRememberAllModifier
+	Event OnSliderOpenST()
+		SetSliderDialogDefaultValue(0.0)
+		SetSliderDialogRange(0.0, 100.0)
+		SetSliderDialogStartValue(QuickDropQuest.pickUpBehaviorModifier[0])
+		SetSliderDialogInterval(1.0)
+	EndEvent
+
+	Event OnSliderAcceptST(float value)
+		QuickDropQuest.pickUpBehaviorModifier[0] = value as int
+		SetSliderOptionValueST(value, "{0}")
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.pickUpBehaviorModifier[0] = 0
+		SetSliderOptionValueSt(0.0, "{0}")
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("The maximum number of items to remember in one stack slot. 0 means no limit.\nItems beyond these overflow into a new stack slot.\n")
 	EndEvent
 EndState
 
@@ -392,6 +416,29 @@ State PickUpBehaviorCollapseAll
 	EndEvent
 EndState
 
+State PickUpBehaviorCollapseAllModifier
+	Event OnSliderOpenST()
+		SetSliderDialogDefaultValue(0.0)
+		SetSliderDialogRange(0.0, 100.0)
+		SetSliderDialogStartValue(QuickDropQuest.pickUpBehaviorModifier[1])
+		SetSliderDialogInterval(1.0)
+	EndEvent
+
+	Event OnSliderAcceptST(float value)
+		QuickDropQuest.pickUpBehaviorModifier[1] = value as int
+		SetSliderOptionValueST(value, "{0}")
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.pickUpBehaviorModifier[1] = 0
+		SetSliderOptionValueSt(0.0, "{0}")
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("The maximum number of items to remember in the combined stack slot. 0 means no limit.\nItems beyond these are not remembered.")
+	EndEvent
+EndState
+
 State PickUpBehaviorRememberEach
 	Event OnSelectST()
 		PickUpBehaviorOnSelect(2)
@@ -403,6 +450,29 @@ State PickUpBehaviorRememberEach
 
 	Event OnHighlightST()
 		SetInfoText("When item(s) are picked up, remember each one individually.\nOnly as many are remembered as will fit in your remembered items stack.")
+	EndEvent
+EndState
+
+State PickUpBehaviorRememberEachModifier
+	Event OnSliderOpenST()
+		SetSliderDialogDefaultValue(0.0)
+		SetSliderDialogRange(0.0, 100.0)
+		SetSliderDialogStartValue(QuickDropQuest.pickUpBehaviorModifier[2])
+		SetSliderDialogInterval(1.0)
+	EndEvent
+
+	Event OnSliderAcceptST(float value)
+		QuickDropQuest.pickUpBehaviorModifier[2] = value as int
+		SetSliderOptionValueST(value, "{0}")
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.pickUpBehaviorModifier[2] = 0
+		SetSliderOptionValueSt(0.0, "{0}")
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("The maximum number of items to remember individually. 0 means no limit.")
 	EndEvent
 EndState
 
@@ -420,44 +490,26 @@ State PickUpBehaviorRememberSome
 	EndEvent
 EndState
 
-State PickUpBehaviorModifier
+State PickUpBehaviorRememberSomeModifier
 	Event OnSliderOpenST()
-		if QuickDropQuest.pickUpBehavior == 3
-			SetSliderDialogDefaultValue(1.0)
-			SetSliderDialogRange(1.0, 100.0)
-		else
-			SetSliderDialogDefaultValue(0.0)
-			SetSliderDialogRange(0.0, 100.0)
-		endif
-		SetSliderDialogStartValue(QuickDropQuest.pickUpBehaviorModifier[QuickDropQuest.pickUpBehavior])
+		SetSliderDialogDefaultValue(1.0)
+		SetSliderDialogRange(1.0, 100.0)
+		SetSliderDialogStartValue(QuickDropQuest.pickUpBehaviorModifier[3])
 		SetSliderDialogInterval(1.0)
 	EndEvent
 
 	Event OnSliderAcceptST(float value)
-		QuickDropQuest.pickUpBehaviorModifier[QuickDropQuest.pickUpBehavior] = value as int
+		QuickDropQuest.pickUpBehaviorModifier[3] = value as int
 		SetSliderOptionValueST(value, "{0}")
 	EndEvent
 
 	Event OnDefaultST()
-		if QuickDropQuest.pickUpBehavior == 3
-			QuickDropQuest.pickUpBehaviorModifier[3] = 1
-			SetSliderOptionValueSt(1.0, "{0}")
-		else
-			QuickDropQuest.pickUpBehaviorModifier[QuickDropQuest.pickUpBehavior] = 0
-			SetSliderOptionValueSt(0.0, "{0}")
-		endif
+		QuickDropQuest.pickUpBehaviorModifier[3] = 1
+		SetSliderOptionValueSt(1.0, "{0}")
 	EndEvent
 
 	Event OnHighlightST()
-		if QuickDropQuest.pickUpBehavior == 0
-			SetInfoText("The maximum number of items to remember in one stack slot. 0 means no limit.\nItems beyond these overflow into a new stack slot.\n")
-		elseif QuickDropQuest.pickUpBehavior == 1
-			SetInfoText("The maximum number of items to remember in the combined stack slot. 0 means no limit.\nItems beyond these are not remembered.")
-		elseif QuickDropQuest.pickUpBehavior == 2
-			SetInfoText("The maximum number of items to remember individually. 0 means no limit.")
-		elseif QuickDropQuest.pickUpBehavior == 3
-			SetInfoText("The maximum number of items to remember in one stack slot.\nItems beyond these are not remembered.")
-		endif
+		SetInfoText("The maximum number of items to remember in one stack slot.\nItems beyond these are not remembered.")
 	EndEvent
 EndState
 
