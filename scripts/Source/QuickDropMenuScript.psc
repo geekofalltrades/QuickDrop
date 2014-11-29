@@ -11,10 +11,9 @@ Event OnConfigInit()
 	{Perform menu setup.}
 	Pages = new string[5]
 	Pages[0] = "Stack"
-	Pages[1] = "Hotkeys"
-	Pages[2] = "Settings"
-	Pages[3] = "Pickup/Drop"
-	Pages[4] = "Replace"
+	Pages[1] = "General Settings"
+	Pages[2] = "Pickup/Drop"
+	Pages[3] = "Replace"
 EndEvent
 
 Event OnPageReset(string page)
@@ -22,10 +21,8 @@ Event OnPageReset(string page)
 	SetCursorFillMode(TOP_TO_BOTTOM)
 	if page == "Stack"
 		DrawStackPage()
-	elseif page == "Hotkeys"
-		DrawHotkeysPage()
-	elseif page == "Settings"
-		DrawSettingsPage()
+	elseif page == "General Settings"
+		DrawGeneralSettingsPage()
 	elseif page == "Pickup/Drop"
 		DrawPickupDropPage()
 	elseif page == "Replace"
@@ -38,19 +35,16 @@ Function DrawStackPage()
 	DrawRememberedItems()
 EndFunction
 
-Function DrawHotkeysPage()
-	{Draw the "Basic" settings page.}
+Function DrawGeneralSettingsPage()
+	{Draw the "Advanced" settings page.}
 	AddHeaderOption("Hotkeys")
+	AddKeymapOptionST("ToggleRememberingHotkey", "Toggle Remembering", QuickDropQuest.toggleRememberingHotkey)
 	AddKeymapOptionST("ShowHotkey", "Show Current Item", QuickDropQuest.showHotkey)
 	AddKeymapOptionST("DropHotkey", "Drop Current Item", QuickDropQuest.dropHotkey)
 	AddKeymapOptionST("KeepHotkey", "Keep Current Item", QuickDropQuest.keepHotkey)
 	AddKeymapOptionST("DropAllHotkey", "Drop All Items", QuickDropQuest.dropAllHotkey)
 	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
-	AddKeymapOptionST("ToggleRememberingHotkey", "Toggle Remembering", QuickDropQuest.toggleRememberingHotkey)
-EndFunction
-
-Function DrawSettingsPage()
-	{Draw the "Advanced" settings page.}
+	SetCursorPosition(1)
 	AddHeaderOption("Settings")
 	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
 	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
@@ -123,7 +117,9 @@ bool Function CheckKeyConflict(string conflictControl, string conflictName)
 EndFunction
 
 string Function GetCustomControl(int KeyCode)
-	if KeyCode == QuickDropQuest.showHotkey
+	if KeyCode == QuickDropQuest.toggleRememberingHotkey
+		return "Toggle Remembering"
+	elseif KeyCode == QuickDropQuest.showHotkey
 		return "Show Current Item"
 	elseif KeyCode == QuickDropQuest.dropHotKey
 		return "Drop Current Item"
@@ -133,8 +129,6 @@ string Function GetCustomControl(int KeyCode)
 		return "Drop All Items"
 	elseif KeyCode == QuickDropQuest.keepAllHotkey
 		return "Keep All Items"
-	elseif KeyCode == QuickDropQuest.toggleRememberingHotkey
-		return "Toggle Remembering"
 	endif
 	return ""
 EndFunction
@@ -142,13 +136,31 @@ EndFunction
 Event OnConfigClose()
 	{When the menu is closed, rebind the hotkeys.}
 	UnregisterForAllKeys()
+	RegisterForKey(QuickDropQuest.toggleRememberingHotkey)
 	RegisterForKey(QuickDropQuest.showHotkey)
 	RegisterForKey(QuickDropQuest.dropHotkey)
 	RegisterForKey(QuickDropQuest.keepHotkey)
 	RegisterForKey(QuickDropQuest.dropAllHotkey)
 	RegisterForKey(QuickDropQuest.keepAllHotkey)
-	RegisterForKey(QuickDropQuest.toggleRememberingHotkey)
 EndEvent
+
+State ToggleRememberingHotkey
+	Event OnKeyMapChangeST(int keyCode, string conflictControl, string conflictName)
+		if CheckKeyConflict(conflictControl, conflictName)
+			QuickDropQuest.toggleRememberingHotkey = keyCode
+			SetKeymapOptionValueST(keyCode)
+		endif
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.toggleRememberingHotkey = -1
+		SetKeymapOptionValueST(-1)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Toggle item remembering on and off. (Currently " + ToggleRememberingStateToString() + ".)\nWhen on, QuickDrop remembers new items as they're added to your inventory.\nWhen off, QuickDrop does not remember new items.")
+	EndEvent
+EndState
 
 State ShowHotkey
 	Event OnKeyMapChangeST(int keyCode, string conflictControl, string conflictName)
@@ -182,7 +194,7 @@ State DropHotKey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Drop the current remembered item and proceed to the next.")
+		SetInfoText("Attempt to drop or replace the current remembered item and proceed to the next.")
 	EndEvent
 EndState
 
@@ -218,7 +230,7 @@ State DropAllHotkey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Drop all remembered items.")
+		SetInfoText("Attempt to drop or replace all remembered items.")
 	EndEvent
 EndState
 
@@ -237,24 +249,6 @@ State KeepAllHotkey
 
 	Event OnHighlightST()
 		SetInfoText("Keep all remembered items.")
-	EndEvent
-EndState
-
-State ToggleRememberingHotkey
-	Event OnKeyMapChangeST(int keyCode, string conflictControl, string conflictName)
-		if CheckKeyConflict(conflictControl, conflictName)
-			QuickDropQuest.toggleRememberingHotkey = keyCode
-			SetKeymapOptionValueST(keyCode)
-		endif
-	EndEvent
-
-	Event OnDefaultST()
-		QuickDropQuest.toggleRememberingHotkey = -1
-		SetKeymapOptionValueST(-1)
-	EndEvent
-
-	Event OnHighlightST()
-		SetInfoText("Toggle item remembering on and off. (Currently " + ToggleRememberingStateToString() + ".)\nWhen on, QuickDrop remembers new items as they're added to your inventory.\nWhen off, QuickDrop does not remember new items.")
 	EndEvent
 EndState
 
