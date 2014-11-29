@@ -84,6 +84,7 @@ Function DrawReplacePage()
 	SetCursorPosition(1)
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnReplaceInContainer", "Item Replaced in Container", QuickDropQuest.notifyOnReplaceInContainer)
+	AddToggleOptionST("NotifyOnFailToReplaceInContainer", "Failed to Replace In Container", QuickDropQuest.notifyOnFailToReplaceInContainer)
 EndFunction
 
 Function DrawRememberedItems()
@@ -582,6 +583,22 @@ State NotifyOnReplaceInContainer
 
 	Event OnHighlightST()
 		SetInfoText("Display a message when the current item is replaced in its original container.")
+	EndEvent
+EndState
+
+State NotifyOnFailToReplaceInContainer
+	Event OnSelectST()
+		QuickDropQuest.notifyOnFailToReplaceInContainer = !QuickDropQuest.notifyOnFailToReplaceInContainer
+		SetToggleOptionValueST(QuickDropQuest.notifyOnFailToReplaceInContainer)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.notifyOnFailToReplaceInContainer = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Display a message when the current item can't be replaced in its original container.")
 	EndEvent
 EndState
 
