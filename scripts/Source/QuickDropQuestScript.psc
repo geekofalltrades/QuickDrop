@@ -83,6 +83,12 @@ bool Property notifyOnReplaceInContainer = True Auto
 bool Property notifyOnFailToReplaceInContainer = False Auto
 {Whether or not to display a notification when an item can't be replaced in its original container.}
 
+bool Property notifyOnReplaceInWorld = False Auto
+{Whether or not to display a notification when an item is replaced in its original world location.}
+
+bool Property notifyOnFailToReplaceInWorld = False Auto
+{Whether or not to display a notification when an item can't be replaced in its original world location.}
+
 bool Property notifyOnKeep = True Auto
 {Whether or not to display a notification when an item is kept.}
 
@@ -105,8 +111,20 @@ int Property replaceInContainerDistance = 250 Auto
 bool Property replaceInContainerDropOnFail = True Auto
 {Whether or not to drop an item if it can't be replaced in its container.}
 
-bool Property rememberContainer = False Auto
+bool Property rememberContainer = True Auto
 {Whether or not to remember containers items come from. Implied by replaceInContainer.}
+
+bool Property replaceInWorld = False Auto
+{Whether or not to replace items in their original world locations.}
+
+int Property replaceInWorldDistance = 250 Auto
+{The distance at which you're allowed to replace items at their world locations.}
+
+bool Property replaceInWorldDropOnFail = True Auto
+{Whether or not to drop an item if it can't be replaced in its world location.}
+
+bool Property rememberWorldLocation = True Auto
+{Whether or not to remember items' world locations. Implied by replaceInWorld.}
 
 ;Remember the index of the current item.
 ;Start it at 9 so that the first call to IncrementCurrentIndex sets it back to 0.

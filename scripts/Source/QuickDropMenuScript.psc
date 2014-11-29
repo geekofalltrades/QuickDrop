@@ -9,7 +9,7 @@ QuickDropPlayerRememberScript Property RememberScript Auto
 
 Event OnConfigInit()
 	{Perform menu setup.}
-	Pages = new string[5]
+	Pages = new string[4]
 	Pages[0] = "Stack"
 	Pages[1] = "General Settings"
 	Pages[2] = "Pickup/Drop"
@@ -78,10 +78,18 @@ Function DrawReplacePage()
 	AddSliderOptionST("ReplaceInContainerDistance", "Replace in Container Distance", QuickDropQuest.replaceInContainerDistance, "{0}")
 	AddToggleOptionST("ReplaceInContainerDropOnFail", "Drop if Can't Replace in Container", QuickDropQuest.replaceInContainerDropOnFail)
 	AddToggleOptionST("RememberContainer", "Always Remember Containers", QuickDropQuest.rememberContainer)
+	AddEmptyOption()
+	AddHeaderOption("Replace Items in World")
+	AddToggleOptionST("ReplaceInWorld", "Replace in World", QuickDropQuest.replaceInWorld)
+	AddSliderOptionST("ReplaceInWorldDistance", "Replace in World Distance", QuickDropQuest.replaceInWorldDistance, "{0}")
+	AddToggleOptionST("ReplaceInWorldDropOnFail", "Drop if Can't Replace in World", QuickDropQuest.replaceInWorldDropOnFail)
+	AddToggleOptionST("RememberWorldLocation", "Always Remember World Locations", QuickDropQuest.rememberWorldLocation)
 	SetCursorPosition(1)
 	AddHeaderOption("Notifications")
 	AddToggleOptionST("NotifyOnReplaceInContainer", "Item Replaced in Container", QuickDropQuest.notifyOnReplaceInContainer)
 	AddToggleOptionST("NotifyOnFailToReplaceInContainer", "Failed to Replace In Container", QuickDropQuest.notifyOnFailToReplaceInContainer)
+	AddToggleOptionST("NotifyOnReplaceInWorld", "Item Replaced in World", QuickDropQuest.notifyOnReplaceInWorld)
+	AddToggleOptionST("NotifyOnFailToReplaceInWorld", "Failed to Replace In World", QuickDropQuest.notifyOnFailToReplaceInWorld)
 EndFunction
 
 Function DrawRememberedItems()
@@ -548,7 +556,7 @@ State ReplaceInContainerDistance
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("The maximum distance from which you can replace an item in its original container.\n0 means from any distance.")
+		SetInfoText("The maximum distance from which you can replace items in their original containers.\n0 means from any distance.")
 	EndEvent
 EndState
 
@@ -564,7 +572,7 @@ State ReplaceInContainerDropOnFail
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("If the current item(s) can't be replaced in its container, drop it instead.")
+		SetInfoText("If the current item(s) can't be replaced in their containers, drop them instead.")
 	EndEvent
 EndState
 
@@ -575,12 +583,83 @@ State RememberContainer
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.rememberContainer = False
-		SetToggleOptionValueST(False)
+		QuickDropQuest.rememberContainer = True
+		SetToggleOptionValueST(True)
 	EndEvent
 
 	Event OnHighlightST()
 		SetInfoText("Always remember the container item(s) came from, even if \"Replace In Container\" is disabled.\nThis allows you to replace items in containers even if \"Replace In Container\" wasn't enabled when you picked them up.\nThis makes containers into persistent references, which causes some script/savegame bloat.")
+	EndEvent
+EndState
+
+State ReplaceInWorld
+	Event OnSelectST()
+		QuickDropQuest.replaceInWorld = !QuickDropQuest.replaceInWorld
+		SetToggleOptionValueST(QuickDropQuest.replaceInWorld)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.replaceInWorld = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("If the item(s) dropped came from the world, replace them at their original location.\nThis creates persistent references, which causes some script/savegame bloat.")
+	EndEvent
+EndState
+
+State ReplaceInWorldDistance
+	Event OnSliderOpenST()
+		SetSliderDialogStartValue(QuickDropQuest.replaceInWorldDistance)
+		SetSliderDialogDefaultValue(250.0)
+		SetSliderDialogRange(0.0, 5000.0)
+		SetSliderDialogInterval(50.0)
+	EndEvent
+
+	Event OnSliderAcceptST(float value)
+		QuickDropQuest.replaceInWorldDistance = value as int
+		SetSliderOptionValueST(value, "{0}")
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.replaceInWorldDistance = 250
+		SetSliderOptionValueSt(250.0, "{0}")
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("The maximum distance from which you can replace items in their original world locations.\n0 means from any distance.")
+	EndEvent
+EndState
+
+State ReplaceInWorldDropOnFail
+	Event OnSelectST()
+		QuickDropQuest.replaceInWorldDropOnFail = !QuickDropQuest.replaceInWorldDropOnFail
+		SetToggleOptionValueST(QuickDropQuest.replaceInWorldDropOnFail)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.replaceInWorldDropOnFail = True
+		SetToggleOptionValueST(True)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("If the current item(s) can't be replaced in their original world locations, drop them instead.")
+	EndEvent
+EndState
+
+State RememberWorldLocation
+	Event OnSelectST()
+		QuickDropQuest.rememberWorldLocation = !QuickDropQuest.rememberWorldLocation
+		SetToggleOptionValueST(QuickDropQuest.rememberWorldLocation)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.rememberWorldLocation = True
+		SetToggleOptionValueST(True)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Always remember the world location item(s) came from, even if \"Replace In World\" is disabled.\nThis allows you to replace items in the world even if \"Replace In World\" wasn't enabled when you picked them up.\nThis creates persistent references, which causes some script/savegame bloat.")
 	EndEvent
 EndState
 
@@ -628,7 +707,7 @@ State NotifyOnReplaceInContainer
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item is replaced in its original container.")
+		SetInfoText("Display a message when the current item(s) are replaced in their original container.")
 	EndEvent
 EndState
 
@@ -644,7 +723,39 @@ State NotifyOnFailToReplaceInContainer
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item can't be replaced in its original container.")
+		SetInfoText("Display a message when the current item(s) can't be replaced in their original container.")
+	EndEvent
+EndState
+
+State NotifyOnReplaceInWorld
+	Event OnSelectST()
+		QuickDropQuest.notifyOnReplaceInWorld = !QuickDropQuest.notifyOnReplaceInWorld
+		SetToggleOptionValueST(QuickDropQuest.notifyOnReplaceInWorld)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.notifyOnReplaceInWorld = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Display a message when the current item(s) are replaced in their original world location.")
+	EndEvent
+EndState
+
+State NotifyOnFailToReplaceInWorld
+	Event OnSelectST()
+		QuickDropQuest.notifyOnFailToReplaceInWorld = !QuickDropQuest.notifyOnFailToReplaceInWorld
+		SetToggleOptionValueST(QuickDropQuest.notifyOnFailToReplaceInWorld)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.notifyOnFailToReplaceInWorld = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Display a message when the current item(s) can't be replaced in their original world location.")
 	EndEvent
 EndState
 
