@@ -152,6 +152,9 @@ Function SetStackSelectionOptions(int flag, bool noUpdate = False)
 	While i < stackToggleIDs.Length
 		if stackToggleIDs[i] >= 0
 			SetOptionFlags(stackToggleIDs[i], flag, True)
+			if flag == OPTION_FLAG_NONE	;If we're enabling this option.
+				SetToggleOptionValue(stackToggleIDs[i], selected[i], True)	;Also refresh the option's value, so that this function refreshes the page.
+			endif
 		endif
 		i += 1
 	EndWhile
@@ -172,7 +175,7 @@ Function DisableStackManipulationOptions()
 EndFunction
 
 Function UpdateStackOptions()
-	{Update the stack options after a stack slot has been selected or unselected.}
+	{Update the stack options.}
 	SetStackSelectionOptions(OPTION_FLAG_DISABLED, True)	;Disable all options so users can't mess with the state while we're working.
 	DisableStackManipulationOptions()						;Don't update the page, though; this can cause an annoying flash.
 
@@ -229,6 +232,57 @@ Event OnOptionSelect(int option)
 		UpdateStackOptions()
 	endif
 EndEvent
+
+State StackInvertSelection
+	Event OnSelectST()
+		int i = QuickDropQuest.currentIndex
+		int iterations = 0
+		While QuickDropQuest.RememberedItems[i] != None && iterations < QuickDropQuest.maxRemembered
+			selected[i] = !selected[i]
+			i = QuickDropQuest.GetPreviousStackIndex(i)
+			iterations += 1
+		EndWhile
+		UpdateStackOptions()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Unselect all selected items and select all unselected items.")
+	EndEvent
+EndState
+
+State StackSelectAll
+	Event OnSelectST()
+		int i = QuickDropQuest.currentIndex
+		int iterations = 0
+		While QuickDropQuest.RememberedItems[i] != None && iterations < QuickDropQuest.maxRemembered
+			selected[i] = True
+			i = QuickDropQuest.GetPreviousStackIndex(i)
+			iterations += 1
+		EndWhile
+		UpdateStackOptions()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Select all items.")
+	EndEvent
+EndState
+
+State StackSelectNone
+	Event OnSelectST()
+		int i = QuickDropQuest.currentIndex
+		int iterations = 0
+		While QuickDropQuest.RememberedItems[i] != None && iterations < QuickDropQuest.maxRemembered
+			selected[i] = False
+			i = QuickDropQuest.GetPreviousStackIndex(i)
+			iterations += 1
+		EndWhile
+		UpdateStackOptions()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Unselect all items.")
+	EndEvent
+EndState
 
 bool Function CheckKeyConflict(string conflictControl, string conflictName)
 	{Check for OnKeyMapChange key conflicts and get user input.}
