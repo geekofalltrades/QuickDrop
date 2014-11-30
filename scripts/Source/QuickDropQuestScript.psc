@@ -7,6 +7,9 @@ QuickDropPlayerForgetScript Property ForgetScript Auto
 QuickDropPlayerRememberScript Property RememberScript Auto
 {The player script responsible for handling OnItemAdded.}
 
+QuickDropPlayerCrosshairScript Property CrosshairScript Auto
+{The player script responsible for tracking OnCrosshairRefChanged events.}
+
 Actor Property PlayerRef Auto
 {Player reference.}
 
@@ -16,8 +19,11 @@ Form[] Property RememberedItems Auto
 int[] Property RememberedQuantities Auto
 {The quantity of the corresponding RememberedItem remembered.}
 
-ObjectReference[] Property RememberedContainers Auto
-{The container the corresponding item came from, or None if from the world or container not remembered.}
+ObjectReference[] Property RememberedLocations Auto
+{The world location or container the corresponding item came from, or None if no location data is remembered.}
+
+ObjectReference Property locationXMarker Auto
+{The currently persisted XMarker. This marker moves to every item the player focuses on, and is "committed" to RememberedLocations on item pick up, if appropriate.}
 
 FormList Property QuickDropDuplicateItems Auto
 {Keep a list of items that are duplicated in the stack for use with Remember to One Stack Slot.}
@@ -135,13 +141,13 @@ Event OnInit()
 	{Perform script setup.}
 	RememberedItems = new Form[10]
 	RememberedQuantities = new int[10]
-	RememberedContainers = new ObjectReference[10]
+	RememberedLocations = new ObjectReference[10]
 
 	int i = 0
 	While i < RememberedItems.Length
 		RememberedItems[i] = None
 		RememberedQuantities[i] = 0
-		RememberedContainers[i] = None
+		RememberedLocations[i] = None
 		i += 1
 	EndWhile
 
@@ -282,6 +288,36 @@ Auto State Ready
 			GoToState("Ready")
 		endif
 	EndFunction
+
+	Function ToggleReplaceInWorld()
+		{Toggle replaceInWorld and put the crosshair script in the appropriate state.}
+		GoToState("Working")
+
+		replaceInWorld = !replaceInWorld
+
+		if replaceInWorld || rememberWorldLocation
+			CrosshairScript.GoToState("Enabled")
+		else
+			CrosshairScript.GoToState("Disabled")
+		endif
+
+		GoToState("Ready")
+	EndFunction
+
+	Function ToggleRememberWorldLocation()
+		{Toggle rememberWorldLocation and put the crosshair script in the appropriate state.}
+		GoToState("Working")
+
+		rememberWorldLocation = !rememberWorldLocation
+
+		if replaceInWorld || rememberWorldLocation
+			CrosshairScript.GoToState("Enabled")
+		else
+			CrosshairScript.GoToState("Disabled")
+		endif
+
+		GoToState("Ready")
+	EndFunction
 EndState
 
 State Working
@@ -304,18 +340,26 @@ Function AdjustPickUpBehavior(int newPickUpBehavior)
 	{Don't adjust pickUpBehavior while not Ready.}
 EndFunction
 
+Function ToggleReplaceInWorld()
+	{Don't toggle replaceInWorld while not Ready.}
+EndFunction
+
+Function ToggleRememberWorldLocation()
+	{Don't toggle rememberWorldLocation while not Ready.}
+EndFunction
+
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if RememberedItems[currentIndex] != None
 		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved when this item is dropped.
 
-		if replaceInContainer && RememberedContainers[currentIndex] != None	;We're replacing items in containers and have a container to replace to.
+		if replaceInContainer && RememberedLocations[currentIndex] != None	;We're replacing items in containers and have a container to replace to.
 			if CanReplaceInContainer()
 				if notifyOnReplaceInContainer
 					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
 				endif
 
-				PlayerRef.RemoveItem(RememberedItems[currentIndex], RememberedQuantities[currentIndex], True, RememberedContainers[currentIndex])
+				PlayerRef.RemoveItem(RememberedItems[currentIndex], RememberedQuantities[currentIndex], True, RememberedLocations[currentIndex])
 				RemoveIndexFromStack()
 
 			else
@@ -383,13 +427,13 @@ Function HandleDropAllHotkey()
 		int terminate = CountRememberedItems()	;Stop after this many iterations.
 
 		While iterations < terminate
-			if replaceInContainer && RememberedContainers[i] != None	;We're replacing items in containers and have a container to replace to.
+			if replaceInContainer && RememberedLocations[i] != None	;We're replacing items in containers and have a container to replace to.
 				if CanReplaceInContainer()
 					if notifyOnReplaceInContainer && notify < 2
 						notify = 1
 					endif
 
-					PlayerRef.RemoveItem(RememberedItems[i], RememberedQuantities[i], True, RememberedContainers[i])
+					PlayerRef.RemoveItem(RememberedItems[i], RememberedQuantities[i], True, RememberedLocations[i])
 					RemoveIndexFromStack(i)
 
 				else
@@ -499,7 +543,7 @@ Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectRe
 			i += 1
 		EndWhile
 
-		RememberedContainers[currentIndex] = None	;Clear any replacement data, as it's no longer valid.
+		RememberedLocations[currentIndex] = None	;Clear any replacement data, as it's no longer valid.
 
 		if pickUpBehaviorModifier[1] && RememberedQuantities[currentIndex] > pickUpBehaviorModifier[1]	;If we have more remembered than we're allowed, forget some.
 			RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
@@ -525,7 +569,7 @@ Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectRe
 		else
 			RememberedQuantities[currentIndex] = pickUpBehaviorModifier[1]
 		endif
-		RememberedContainers[currentIndex] = None	;Clear any replacement data, as it's no longer valid.
+		RememberedLocations[currentIndex] = None	;Clear any replacement data, as it's no longer valid.
 	endif
 EndFunction
 
@@ -553,9 +597,9 @@ Function RememberNewItem(Form itemToRemember, int quantityToRemember, ObjectRefe
 	RememberedItems[currentIndex] = itemToRemember
 	RememberedQuantities[currentIndex] = quantityToRemember
 	if rememberContainer || replaceInContainer
-		RememberedContainers[currentIndex] = containerToRemember
+		RememberedLocations[currentIndex] = containerToRemember
 	else
-		RememberedContainers[currentIndex] = None
+		RememberedLocations[currentIndex] = None
 	endif
 EndFunction
 
@@ -565,7 +609,7 @@ bool Function CanReplaceInContainer(int index = -1)
 		index = currentIndex
 	endif
 
-	if RememberedContainers[index] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedContainers[index]) <= replaceInContainerDistance)
+	if RememberedLocations[index] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedLocations[index]) <= replaceInContainerDistance)
 		return True
 	endif
 
@@ -655,7 +699,7 @@ Function SwapIndexToTop(int index)
 	if index != currentIndex	;No-op if this index is already the top of the stack.
 		Form itemToTop = RememberedItems[index]
 		int quantityToTop = RememberedQuantities[index]
-		ObjectReference containerToTop = RememberedContainers[index]
+		ObjectReference containerToTop = RememberedLocations[index]
 
 		RemoveIndexFromStack(index)
 		RememberNewItem(itemToTop, quantityToTop, containerToTop)
@@ -672,12 +716,12 @@ Function RemoveIndexFromStack(int index = -1)
 		int nextIndex = GetNextStackIndex(index)
 		RememberedItems[index] = RememberedItems[nextIndex]
 		RememberedQuantities[index] = RememberedQuantities[nextIndex]
-		RememberedContainers[index] = RememberedContainers[nextIndex]
+		RememberedLocations[index] = RememberedLocations[nextIndex]
 		index = nextIndex
 	EndWhile
 
 	RememberedItems[currentIndex] = None	;Clear the top item of the stack.
-	RememberedContainers[currentIndex] = None
+	RememberedLocations[currentIndex] = None
 	DecrementCurrentIndex()
 EndFunction
 
@@ -691,9 +735,9 @@ Function SwapIndices(int indexOne, int indexTwo)
 	RememberedQuantities[indexOne] = RememberedQuantities[indexTwo]
 	RememberedQuantities[indexTwo] = tempQuantity
 
-	ObjectReference tempContainer = RememberedContainers[indexOne]
-	RememberedContainers[indexOne] = RememberedContainers[indexTwo]
-	RememberedContainers[indexTwo] = tempContainer
+	ObjectReference tempContainer = RememberedLocations[indexOne]
+	RememberedLocations[indexOne] = RememberedLocations[indexTwo]
+	RememberedLocations[indexTwo] = tempContainer
 EndFunction
 
 Function AlignAndResizeStack(int newStackSize = -1)
@@ -728,14 +772,14 @@ Function AlignAndResizeStack(int newStackSize = -1)
 		While i >= 0
 			newItems[i] = RememberedItems[currentIndex]
 			newQuantities[i] = RememberedQuantities[currentIndex]
-			newContainers[i] = RememberedContainers[currentIndex]
+			newContainers[i] = RememberedLocations[currentIndex]
 			DecrementCurrentIndex()
 			i -= 1
 		EndWhile
 
 		RememberedItems = newItems
 		RememberedQuantities = newQuantities
-		RememberedContainers = newContainers
+		RememberedLocations = newContainers
 		currentIndex = newCurrentIndex
 	endif
 EndFunction

@@ -7,6 +7,9 @@ QuickDropQuestScript Property QuickDropQuest Auto
 QuickDropPlayerRememberScript Property RememberScript Auto
 {The player script responsible for OnItemAdded.}
 
+QuickDropPlayerCrosshairScript Property CrosshairScript Auto
+{The player script responsible for tracking OnCrosshairRefChanged events.}
+
 Event OnConfigInit()
 	{Perform menu setup.}
 	Pages = new string[4]
@@ -594,12 +597,14 @@ EndState
 
 State ReplaceInWorld
 	Event OnSelectST()
-		QuickDropQuest.replaceInWorld = !QuickDropQuest.replaceInWorld
+		QuickDropQuest.ToggleReplaceInWorld()
 		SetToggleOptionValueST(QuickDropQuest.replaceInWorld)
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.replaceInWorld = False
+		if QuickDropQuest.replaceInWorld
+			QuickDropQuest.ToggleReplaceInWorld()
+		endif
 		SetToggleOptionValueST(False)
 	EndEvent
 
@@ -649,12 +654,14 @@ EndState
 
 State RememberWorldLocation
 	Event OnSelectST()
-		QuickDropQuest.rememberWorldLocation = !QuickDropQuest.rememberWorldLocation
+		QuickDropQuest.ToggleRememberWorldLocation()
 		SetToggleOptionValueST(QuickDropQuest.rememberWorldLocation)
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.rememberWorldLocation = True
+		if !QuickDropQuest.rememberWorldLocation
+			QuickDropQuest.ToggleRememberWorldLocation()
+		endif
 		SetToggleOptionValueST(True)
 	EndEvent
 
