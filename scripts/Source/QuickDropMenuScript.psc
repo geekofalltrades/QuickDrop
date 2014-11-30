@@ -189,8 +189,15 @@ Function UpdateStackOptions()
 	endif
 
 	if numSelected == 1
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveUp")
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveDown")
+		i = selected.Find(True)
+		if i != QuickDropQuest.currentIndex
+			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveUp")
+		endif
+
+		i = QuickDropQuest.GetPreviousStackIndex(i)
+		if i != QuickDropQuest.currentIndex && QuickDropQuest.RememberedItems[i] != None
+			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveDown")
+		endif
 	endif
 
 	if numSelected == 2
