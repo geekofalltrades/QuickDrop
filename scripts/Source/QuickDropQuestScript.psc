@@ -22,6 +22,9 @@ int[] Property RememberedQuantities Auto
 ObjectReference[] Property RememberedLocations Auto
 {The world location or container the corresponding item came from, or None if no location data is remembered.}
 
+Static Property XMarker Auto
+{An XMarker, for use in marking world replace locations.}
+
 ObjectReference Property locationXMarker Auto
 {The currently persisted XMarker. This marker moves to every item the player focuses on, and is "committed" to RememberedLocations on item pick up, if appropriate.}
 
@@ -34,7 +37,7 @@ Message Property QuickDropNoItemsRemembered Auto
 Message Property QuickDropAllItemsDropped Auto
 {Message displayed when all items are dropped.}
 
-Message Property QuickDropSomeItemsDropped Auto
+Message Property QuickDropSomeItemsNotDropped Auto
 {Message displayed when the Drop All Hotkey fails to drop some items.}
 
 Message Property QuickDropAllItemsKept Auto
@@ -353,7 +356,7 @@ Function HandleDropHotkey()
 	if RememberedItems[currentIndex] != None
 		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved when this item is dropped.
 
-		if replaceInContainer && RememberedLocations[currentIndex] != None	;We're replacing items in containers and have a container to replace to.
+		if replaceInContainer && RememberedLocations[currentIndex] != None && RememberedLocations[currentIndex].GetBaseObject() != XMarker	;We're replacing items in containers and have a container to replace to.
 			if CanReplaceInContainer()
 				if notifyOnReplaceInContainer
 					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
@@ -368,6 +371,30 @@ Function HandleDropHotkey()
 				endif
 
 				if replaceInContainerDropOnFail
+					if notifyOnDrop
+						Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
+					endif
+
+					PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
+					RemoveIndexFromStack()
+				endif
+			endif
+
+		elseif replaceInWorld && RememberedLocations[currentIndex] != None && RememberedLocations[currentIndex].GetBaseObject() == XMarker	;We're replacing items in the world and have an XMarker to replace to.
+			if CanReplaceInWorld()
+				if notifyOnReplaceInWorld
+					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in world.")
+				endif
+
+				PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex]).MoveTo(RememberedLocations[currentIndex])
+				RemoveIndexFromStack()
+
+			else
+				if notifyOnFailToReplaceInWorld
+					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") could not be replaced in world.")
+				endif
+
+				if replaceInWorldDropOnFail
 					if notifyOnDrop
 						Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
 					endif
@@ -427,7 +454,7 @@ Function HandleDropAllHotkey()
 		int terminate = CountRememberedItems()	;Stop after this many iterations.
 
 		While iterations < terminate
-			if replaceInContainer && RememberedLocations[i] != None	;We're replacing items in containers and have a container to replace to.
+			if replaceInContainer && RememberedLocations[i] != None	&& RememberedLocations[i].GetBaseObject() != XMarker ;We're replacing items in containers and have a container to replace to.
 				if CanReplaceInContainer()
 					if notifyOnReplaceInContainer && notify < 2
 						notify = 1
@@ -446,6 +473,30 @@ Function HandleDropAllHotkey()
 						RemoveIndexFromStack(i)
 
 					elseif notifyOnFailToReplaceInContainer	;Special-case notification: some items couldn't be dropped/replaced.
+						notify = 2
+
+					endif
+				endif
+
+			elseif replaceInWorld && RememberedLocations[i] != None && RememberedLocations[i].GetBaseObject() == XMarker	;We're replacing items in the world and have an XMarker to replace to.
+				if CanReplaceInWorld()
+					if notifyOnReplaceInWorld && notify < 2
+						notify = 1
+					endif
+
+					PlayerRef.DropObject(RememberedItems[i], RememberedQuantities[i]).MoveTo(RememberedLocations[i])
+					RemoveIndexFromStack()
+
+				else
+					if replaceInWorldDropOnFail
+						if notifyOnDrop && notify < 2
+							notify = 1
+						endif
+
+						PlayerRef.DropObject(RememberedItems[i], RememberedQuantities[i])
+						RemoveIndexFromStack()
+
+					elseif notifyOnFailToReplaceInWorld	;Special-case notification: some items couldn't be dropped/replaced.
 						notify = 2
 
 					endif
@@ -470,7 +521,7 @@ Function HandleDropAllHotkey()
 		if notify == 1
 			QuickDropAllItemsDropped.Show()
 		elseif notify == 2
-			QuickDropSomeItemsDropped.Show()
+			QuickDropSomeItemsNotDropped.Show()
 		endif
 
 		if RememberedItems[currentIndex] == None	;If we succeeded in clearing the entire stack.
@@ -596,11 +647,22 @@ Function RememberNewItem(Form itemToRemember, int quantityToRemember, ObjectRefe
 	IncrementCurrentIndex()
 	RememberedItems[currentIndex] = itemToRemember
 	RememberedQuantities[currentIndex] = quantityToRemember
-	if rememberContainer || replaceInContainer
-		RememberedLocations[currentIndex] = containerToRemember
-	else
-		RememberedLocations[currentIndex] = None
+	RememberedLocations[currentIndex] = GetLocationRef(containerToRemember)
+EndFunction
+
+ObjectReference Function GetLocationRef(ObjectReference containerRef)
+	{Return the appropriate world location or container reference to remember, if either.}
+	if containerRef != None && (rememberContainer || replaceInContainer)	;If we have a container and are remembering containers.
+		return containerRef
+
+	elseif containerRef == None && (rememberWorldLocation || replaceInWorld)	;If we don't have a container and are remembering world locations.
+		ObjectReference toReturn = locationXMarker
+		locationXMarker = None	;Clear our reference to locationXMarker, so that a new XMarker is created on next CrosshairRefChange.
+		return toReturn
+
 	endif
+
+	return None	;Otherwise, don't remember any location data.
 EndFunction
 
 bool Function CanReplaceInContainer(int index = -1)
@@ -609,7 +671,20 @@ bool Function CanReplaceInContainer(int index = -1)
 		index = currentIndex
 	endif
 
-	if RememberedLocations[index] != None && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedLocations[index]) <= replaceInContainerDistance)
+	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() != XMarker && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedLocations[index]) <= replaceInContainerDistance)
+		return True
+	endif
+
+	return False
+EndFunction
+
+bool Function CanReplaceInWorld(int index = -1)
+	{Determines whether the item at index can currently be replaced in its original world location.}
+	if index < 0
+		index = currentIndex
+	endif
+
+	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker && (!replaceInWorldDistance || PlayerRef.GetDistance(RememberedLocations[index]) <= replaceInWorldDistance)
 		return True
 	endif
 
@@ -699,10 +774,11 @@ Function SwapIndexToTop(int index)
 	if index != currentIndex	;No-op if this index is already the top of the stack.
 		Form itemToTop = RememberedItems[index]
 		int quantityToTop = RememberedQuantities[index]
-		ObjectReference containerToTop = RememberedLocations[index]
+		ObjectReference locationToTop = RememberedLocations[index]
 
 		RemoveIndexFromStack(index)
-		RememberNewItem(itemToTop, quantityToTop, containerToTop)
+		RememberNewItem(itemToTop, quantityToTop, locationToTop)
+		RememberedLocations[currentIndex] = locationToTop	;Ensure that the existing location was swapped to the top regardless of current location remembering settings.
 	endif
 EndFunction
 
@@ -716,6 +792,11 @@ Function RemoveIndexFromStack(int index = -1)
 		int nextIndex = GetNextStackIndex(index)
 		RememberedItems[index] = RememberedItems[nextIndex]
 		RememberedQuantities[index] = RememberedQuantities[nextIndex]
+
+		if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker	;If the stored location data is a world location XMarker.
+			RememberedLocations[index].Delete()	;Mark it for deletion.
+		endif
+
 		RememberedLocations[index] = RememberedLocations[nextIndex]
 		index = nextIndex
 	EndWhile
