@@ -41,11 +41,8 @@ EndEvent
 
 Function DrawStackPage()
 	{Draw the "Stack" settings page.}
-	AddHeaderOption("Selection")
-	AddTextOptionST("StackInvertSelection", "Invert Selection", "")
-	AddTextOptionST("StackSelectAll", "Select All", "")
-	AddTextOptionST("StackSelectNone", "Select None", "")
 	AddHeaderOption("Options")
+	AddTextOptionST("StackClearLocation", "Clear Locations From Selection", "", OPTION_FLAG_DISABLED)
 	AddTextOptionST("StackDropSelected", "Drop Selected", "", OPTION_FLAG_DISABLED)
 	AddTextOptionST("StackKeepSelected", "Keep Selected", "", OPTION_FLAG_DISABLED)
 	AddTextOptionST("StackMoveUp", "Move Up", "", OPTION_FLAG_DISABLED)
@@ -53,6 +50,11 @@ Function DrawStackPage()
 	AddTextOptionST("StackSwapSelected", "Swap", "", OPTION_FLAG_DISABLED)
 	AddTextOptionST("StackCombineUp", "Combine Up", "", OPTION_FLAG_DISABLED)
 	AddTextOptionST("StackCombineDown", "Combine Down", "", OPTION_FLAG_DISABLED)
+	AddEmptyOption()
+	AddHeaderOption("Selection")
+	AddTextOptionST("StackInvertSelection", "Invert Selection", "")
+	AddTextOptionST("StackSelectAll", "Select All", "")
+	AddTextOptionST("StackSelectNone", "Select None", "")
 
 	stackToggleIDs = new int[10]
 	selected = new bool[10]
@@ -146,99 +148,25 @@ Event OnConfigClose()
 	selected = None
 EndEvent
 
-Function SetStackSelectionOptions(int flag, bool noUpdate = False)
-	{Set the flag on the stack selection options. We want them off while we're working so our state is frozen.}
-	int i = 0
-	While i < stackToggleIDs.Length
-		if stackToggleIDs[i] >= 0
-			SetOptionFlags(stackToggleIDs[i], flag, True)
-			if flag == OPTION_FLAG_NONE	;If we're enabling this option.
-				SetToggleOptionValue(stackToggleIDs[i], selected[i], True)	;Also refresh the option's value, so that this function refreshes the page.
+State StackClearLocation
+	Event OnSelectST()
+		QuickDropQuest.GoToState("Working")
+		int i = selected.Find(True)
+		While i >= 0
+			if QuickDropQuest.RememberedLocations[i] != None && QuickDropQuest.RememberedLocations[i].GetBaseObject() == QuickDropQuest.XMarker
+				QuickDropQuest.RememberedLocations[i].Delete()
 			endif
-		endif
-		i += 1
-	EndWhile
-	SetOptionFlagsST(flag, True, "StackInvertSelection")
-	SetOptionFlagsST(flag, True, "StackSelectAll")
-	SetOptionFlagsST(flag, noUpdate, "StackSelectNone")
-EndFunction
-
-Function DisableStackManipulationOptions()
-	{Disable all stack manipulation options. We want them off while we're working so our state is frozen.}
-	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackDropSelected")
-	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackKeepSelected")
-	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackMoveUp")
-	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackMoveDown")
-	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackSwapSelected")
-	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackCombineUp")
-	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackCombineDown")
-EndFunction
-
-Function UpdateStackOptions()
-	{Update the stack options.}
-	SetStackSelectionOptions(OPTION_FLAG_DISABLED, True)	;Disable all options so users can't mess with the state while we're working.
-	DisableStackManipulationOptions()						;Don't update the page, though; this can cause an annoying flash.
-
-	int numSelected = 0
-	int i = selected.Find(True)
-	While i >= 0
-		numSelected += 1
-		i = selected.Find(True, i + 1)
-	EndWhile
-
-	if numSelected > 0
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackDropSelected")
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackKeepSelected")
-	endif
-
-	if numSelected == 1
-		i = selected.Find(True)
-		if i != QuickDropQuest.currentIndex
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveUp")
-		endif
-
-		i = QuickDropQuest.GetPreviousStackIndex(i)
-		if i != QuickDropQuest.currentIndex && QuickDropQuest.RememberedItems[i] != None
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveDown")
-		endif
-	endif
-
-	if numSelected == 2
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackSwapSelected")
-	endif
-
-	if numSelected > 1
-		i = selected.Find(True)
-		Form selectedItem = QuickDropQuest.RememberedItems[i]
-		bool same = True
-
-		;Do-While structure.
-		i = selected.Find(True, i + 1)
-		While i >= 0 && same
-			if QuickDropQuest.RememberedItems[i] != selectedItem
-				same = False
-			endif
+			QuickDropQuest.RememberedLocations[i] = None
 			i = selected.Find(True, i + 1)
 		EndWhile
-
-		if same
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackCombineUp")
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackCombineDown")
-		endif
-	endif
-
-	SetStackSelectionOptions(OPTION_FLAG_NONE)	;Re-enable stack selection options and refresh the page.
-EndFunction
-
-Event OnOptionSelect(int option)
-	{Old-style select for handling selection of rows in the stack menu.}
-	int index = stackToggleIDs.Find(option)
-	if index >= 0
-		selected[index] = !selected[index]
-		SetToggleOptionValue(option, selected[index], True)
+		QuickDropQuest.GoToState("Ready")
 		UpdateStackOptions()
-	endif
-EndEvent
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Clear any remembered world locations or containers from the selected items.\nThis clears persistent references, which can help free up memory and reduce savegame bloat.\nCan't be undone.")
+	EndEvent
+EndState
 
 State StackInvertSelection
 	Event OnSelectST()
@@ -290,6 +218,151 @@ State StackSelectNone
 		SetInfoText("Unselect all items.")
 	EndEvent
 EndState
+
+Function SetStackSelectionOptions(int flag, bool noUpdate = False)
+	{Set the flag on the stack selection options. We want them off while we're working so our state is frozen.}
+	int i = 0
+	While i < stackToggleIDs.Length
+		if stackToggleIDs[i] >= 0
+			SetOptionFlags(stackToggleIDs[i], flag, True)
+			if flag == OPTION_FLAG_NONE	;If we're enabling this option.
+				SetToggleOptionValue(stackToggleIDs[i], selected[i], True)	;Also refresh the option's value, so that this function refreshes the page.
+			endif
+		endif
+		i += 1
+	EndWhile
+	SetOptionFlagsST(flag, True, "StackInvertSelection")
+	SetOptionFlagsST(flag, True, "StackSelectAll")
+	SetOptionFlagsST(flag, noUpdate, "StackSelectNone")
+EndFunction
+
+Function DisableStackManipulationOptions()
+	{Disable all stack manipulation options. We want them off while we're working so our state is frozen.}
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackClearLocation")
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackDropSelected")
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackKeepSelected")
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackMoveUp")
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackMoveDown")
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackSwapSelected")
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackCombineUp")
+	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackCombineDown")
+EndFunction
+
+Function UpdateStackOptions()
+	{Update the stack options.}
+	SetStackSelectionOptions(OPTION_FLAG_DISABLED, True)	;Disable all options so users can't mess with the state while we're working.
+	DisableStackManipulationOptions()						;Don't update the page, though; this can cause an annoying flash.
+
+	int numSelected = 0
+	int i = selected.Find(True)
+	While i >= 0
+		numSelected += 1
+		i = selected.Find(True, i + 1)
+	EndWhile
+
+	if numSelected > 0
+		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackDropSelected")
+		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackKeepSelected")
+
+		bool clearLocation = False
+
+		i = selected.Find(True)
+		While i >= 0 && !clearLocation
+			if QuickDropQuest.RememberedLocations[i] != None
+				clearLocation = True
+			endif
+			i = selected.Find(True, i + 1)
+		EndWhile
+
+		if clearLocation
+			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackClearLocation")
+		endif
+	endif
+
+	if numSelected == 1
+		i = selected.Find(True)
+		if i != QuickDropQuest.currentIndex
+			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveUp")
+		endif
+
+		i = QuickDropQuest.GetPreviousStackIndex(i)
+		if i != QuickDropQuest.currentIndex && QuickDropQuest.RememberedItems[i] != None
+			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveDown")
+		endif
+	endif
+
+	if numSelected == 2
+		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackSwapSelected")
+	endif
+
+	if numSelected > 1
+		i = selected.Find(True)
+		Form selectedItem = QuickDropQuest.RememberedItems[i]
+		bool same = True
+
+		;Do-While structure.
+		i = selected.Find(True, i + 1)
+		While i >= 0 && same
+			if QuickDropQuest.RememberedItems[i] != selectedItem
+				same = False
+			endif
+			i = selected.Find(True, i + 1)
+		EndWhile
+
+		if same
+			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackCombineUp")
+			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackCombineDown")
+		endif
+	endif
+
+	SetStackSelectionOptions(OPTION_FLAG_NONE)	;Re-enable stack selection options and refresh the page.
+EndFunction
+
+Event OnOptionSelect(int option)
+	{Old-style select for handling selection of rows in the stack menu.}
+	int index = stackToggleIDs.Find(option)
+	if index >= 0
+		selected[index] = !selected[index]
+		SetToggleOptionValue(option, selected[index], True)
+		UpdateStackOptions()
+	endif
+EndEvent
+
+Event OnOptionHighlight(int option)
+	{Old-style highlight for handling highlighting of rows in the stack menu.}
+	int index = stackToggleIDs.Find(option)
+	if index >= 0
+		string msg = QuickDropQuest.RememberedItems[index].GetName() + ".\n"
+
+		if QuickDropQuest.RememberedQuantities[index] == 1
+			msg += "Single item.\n"
+		else
+			msg += "Stack of " + QuickDropQuest.RememberedQuantities[index] + " items.\n"
+		endif
+
+		if QuickDropQuest.RememberedLocations[index] == None
+			msg += "No location remembered."
+
+		elseif QuickDropQuest.RememberedLocations[index].GetBaseObject() == QuickDropQuest.XMarker
+			msg += "From world."
+			if QuickDropQuest.CanReplaceInWorld(index)
+				msg += " Can be replaced."
+			else
+				msg += " Too far away to replace."
+			endif
+
+		else
+			msg += "From container."
+			if QuickDropQuest.CanReplaceInContainer(index)
+				msg += " Can be replaced."
+			else
+				msg += " Too far away to replace."
+			endif
+		endif
+
+		SetInfoText(msg)
+	endif
+EndEvent
 
 bool Function CheckKeyConflict(string conflictControl, string conflictName)
 	{Check for OnKeyMapChange key conflicts and get user input.}
