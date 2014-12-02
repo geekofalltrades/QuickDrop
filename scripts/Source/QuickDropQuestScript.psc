@@ -333,6 +333,7 @@ Function HandleShowHotkey()
 	endif
 EndFunction
 
+<<<<<<< HEAD
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if Stack.depth
@@ -485,8 +486,12 @@ Function HandleDropAllHotkey()
 
 			endif
 
-			i = GetPreviousStackIndex(i)
 			iterations += 1
+			if indices == None
+				i = GetPreviousStackIndex(i)
+			else
+				i = indices[iterations]
+			endif
 		EndWhile
 
 		ForgetScript.GoToState("Enabled")

@@ -164,7 +164,72 @@ State StackClearLocation
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Clear any remembered world locations or containers from the selected items.\nThis clears persistent references, which can help free up memory and reduce savegame bloat.\nCan't be undone.")
+		SetInfoText("Clear any remembered world locations or containers from the selected item(s).\nThis clears persistent references, which can help free up memory and reduce savegame bloat.\nItem(s) will no longer be replaceable in the world or in containers. Can't be undone.")
+	EndEvent
+EndState
+
+int[] Function GetSelectedIndices()
+	{Return an array of selected indices in top-down stack order. If not full, it is terminated with -1.}
+	int numSelected = 0
+	int[] selectedIndices = new int[10]
+
+	;Start from the current index and move down the stack to the bottom of the array.
+	int i = selected.Rfind(True, QuickDropQuest.currentIndex)
+	While i >= 0
+		selectedIndices[numSelected] = i
+		numSelected += 1
+		i = selected.Rfind(True, i - 1)
+	EndWhile
+
+	;Wrap around to the top of the array and search back down the stack to the current index.
+	i = selected.Rfind(True)
+	While i > QuickDropQuest.currentIndex
+		selectedIndices[numSelected] = i
+		numSelected += 1
+		i = selected.Rfind(True, i - 1)
+	EndWhile
+
+	;If we haven't filled selectedIndices, terminate it with -1.
+	if numSelected < selectedIndices.Length
+		selectedIndices[numSelected] = -1
+	endif
+
+	return selectedIndices
+EndFunction
+
+State StackDropSelected
+	Event OnSelectST()
+		int[] toDrop = GetSelectedIndices()
+		QuickDropQuest.GoToState("Working")
+		if toDrop.Find(-1) == 1	;If we have only one selected index.
+			QuickDropQuest.HandleDropHotkey(toDrop[0])
+		else	;If we have more than one selected index.
+			QuickDropQuest.HandleDropAllHotkey(toDrop)
+		endif
+		QuickDropQuest.GoToState("Ready")
+		ForcePageReset()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Drop the selected item(s).")
+	EndEvent
+EndState
+
+State StackKeepSelected
+	Event OnSelectST()
+		int[] toKeep = GetSelectedIndices()
+		QuickDropQuest.GoToState("Working")
+		if toKeep.Find(-1) == 1	;If we have only one selected index.
+			QuickDropQuest.HandleKeepHotkey(toKeep[0])
+		else	;If we have more than one selected index.
+			QuickDropQuest.HandleKeepAllHotkey(toKeep)
+		endif
+		QuickDropQuest.GoToState("Ready")
+		ForcePageReset()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Keep the selected item(s).")
 	EndEvent
 EndState
 
