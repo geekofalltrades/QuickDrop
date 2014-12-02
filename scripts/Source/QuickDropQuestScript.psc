@@ -49,11 +49,14 @@ Message Property QuickDropRememberingOn Auto
 Message Property QuickDropRememberingOff Auto
 {Message displayed when remembering is toggled off.}
 
-int Property dropHotkey = -1 Auto
-{Drop the last remembered item(s).}
+int Property toggleRememberingHotkey = -1 Auto
+{Toggle remembering.}
 
 int Property showHotkey = -1 Auto
 {Show the last remembered item(s).}
+
+int Property dropHotkey = -1 Auto
+{Drop the last remembered item(s).}
 
 int Property keepHotkey = -1 Auto
 {Keep the last remembered item(s).}
@@ -63,9 +66,6 @@ int Property dropAllHotkey = -1 Auto
 
 int Property keepAllHotkey = -1 Auto
 {Keep all remembered items.}
-
-int Property toggleRememberingHotkey = -1 Auto
-{Toggle remembering.}
 
 int Property maxRemembered = 5 Auto
 {The number of items to remember.}
@@ -351,73 +351,14 @@ Function ToggleRememberWorldLocation()
 	{Don't toggle rememberWorldLocation while not Ready.}
 EndFunction
 
-Function HandleDropHotkey()
-	{Drop the current item and move to the next.}
-	if RememberedItems[currentIndex] != None
-		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved when this item is dropped.
-
-		if replaceInContainer && RememberedLocations[currentIndex] != None && RememberedLocations[currentIndex].GetBaseObject() != XMarker	;We're replacing items in containers and have a container to replace to.
-			if CanReplaceInContainer()
-				if notifyOnReplaceInContainer
-					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in container.")
-				endif
-
-				PlayerRef.RemoveItem(RememberedItems[currentIndex], RememberedQuantities[currentIndex], True, RememberedLocations[currentIndex])
-				RemoveIndexFromStack()
-
-			else
-				if notifyOnFailToReplaceInContainer
-					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") could not be replaced in container.")
-				endif
-
-				if replaceInContainerDropOnFail
-					if notifyOnDrop
-						Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
-					endif
-
-					PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
-					RemoveIndexFromStack()
-				endif
-			endif
-
-		elseif replaceInWorld && RememberedLocations[currentIndex] != None && RememberedLocations[currentIndex].GetBaseObject() == XMarker	;We're replacing items in the world and have an XMarker to replace to.
-			if CanReplaceInWorld()
-				if notifyOnReplaceInWorld
-					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") replaced in world.")
-				endif
-
-				PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex]).MoveTo(RememberedLocations[currentIndex])
-				RemoveIndexFromStack()
-
-			else
-				if notifyOnFailToReplaceInWorld
-					Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") could not be replaced in world.")
-				endif
-
-				if replaceInWorldDropOnFail
-					if notifyOnDrop
-						Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
-					endif
-
-					PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
-					RemoveIndexFromStack()
-				endif
-			endif
-
-		else	;We're not replacing items or don't have a place to replace this item to.
-			if notifyOnDrop
-				Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") dropped.")
-			endif
-
-			PlayerRef.DropObject(RememberedItems[currentIndex], RememberedQuantities[currentIndex])
-			RemoveIndexFromStack()
-
-		endif
-
-		ForgetScript.GoToState("Enabled")
-
+Function HandleToggleRememberingHotkey()
+	{Enable the remember script and display the appropriate message.}
+	if RememberScript.GetState() == "Enabled"
+		RememberScript.GoToState("Disabled")
+		QuickDropRememberingOff.Show()
 	else
-		QuickDropNoItemsRemembered.Show()
+		RememberScript.GoToState("Enabled")
+		QuickDropRememberingOn.Show()
 	endif
 EndFunction
 
@@ -430,30 +371,115 @@ Function HandleShowHotkey()
 	endif
 EndFunction
 
-Function HandleKeepHotkey()
-	{Keep the current item and move to the next.}
-	if RememberedItems[currentIndex] != None
-		if notifyOnKeep
-			Debug.Notification("QuickDrop: " + RememberedItems[currentIndex].GetName() + " (" + RememberedQuantities[currentIndex] + ") kept.")
+Function HandleDropHotkey(int index = -1)
+	{Drop the current item and move to the next. Doubles as a general-purpose function for dropping an item at any index.}
+	if index < 0
+		index = currentIndex
+	endif
+
+	if RememberedItems[index] != None
+		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved when this item is dropped.
+
+		if replaceInContainer && RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() != XMarker	;We're replacing items in containers and have a container to replace to.
+			if CanReplaceInContainer()
+				if notifyOnReplaceInContainer
+					Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") replaced in container.")
+				endif
+
+				PlayerRef.RemoveItem(RememberedItems[index], RememberedQuantities[index], True, RememberedLocations[index])
+				RemoveIndexFromStack()
+
+			else
+				if notifyOnFailToReplaceInContainer
+					Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") could not be replaced in container.")
+				endif
+
+				if replaceInContainerDropOnFail
+					if notifyOnDrop
+						Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") dropped.")
+					endif
+
+					PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index])
+					RemoveIndexFromStack()
+				endif
+			endif
+
+		elseif replaceInWorld && RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker	;We're replacing items in the world and have an XMarker to replace to.
+			if CanReplaceInWorld()
+				if notifyOnReplaceInWorld
+					Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") replaced in world.")
+				endif
+
+				PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index]).MoveTo(RememberedLocations[index])
+				RemoveIndexFromStack()
+
+			else
+				if notifyOnFailToReplaceInWorld
+					Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") could not be replaced in world.")
+				endif
+
+				if replaceInWorldDropOnFail
+					if notifyOnDrop
+						Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") dropped.")
+					endif
+
+					PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index])
+					RemoveIndexFromStack()
+				endif
+			endif
+
+		else	;We're not replacing items or don't have a place to replace this item to.
+			if notifyOnDrop
+				Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") dropped.")
+			endif
+
+			PlayerRef.DropObject(RememberedItems[index], RememberedQuantities[index])
+			RemoveIndexFromStack()
+
 		endif
 
-		RemoveIndexFromStack(currentIndex)
+		ForgetScript.GoToState("Enabled")
+
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
 EndFunction
 
-Function HandleDropAllHotkey()
-	{Drop/replace all remembered items. Operates as if we're attempting a drop/replace on each individual item.}
+Function HandleKeepHotkey(int index = -1)
+	{Keep the current item and move to the next. Doubles as a general-purpose function for keeping the item at the passed-in index.}
+	if index < 0
+		index = currentIndex
+	endif
+
+	if RememberedItems[index] != None
+		if notifyOnKeep
+			Debug.Notification("QuickDrop: " + RememberedItems[index].GetName() + " (" + RememberedQuantities[index] + ") kept.")
+		endif
+
+		RemoveIndexFromStack(index)
+	else
+		QuickDropNoItemsRemembered.Show()
+	endif
+EndFunction
+
+Function HandleDropAllHotkey(int[] indices = None)
+	{Drop/replace all remembered items. Operates as if we're attempting a drop/replace on each individual item. Doubles as a general-purpose function for dropping the items at the given indices. Passed-in indices should be be an array of indexes in top-down stack order, either full or terminated with -1.}
 	if RememberedItems[currentIndex] != None
 		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved when these items are dropped.
 
 		int notify = 0	;What type of notification to display for this action.
-		int i = currentIndex
 		int iterations = 0
 		int terminate = CountRememberedItems()	;Stop after this many iterations.
 
-		While iterations < terminate
+		int i
+		if indices == None
+			i = currentIndex
+		else
+			i = indices[iterations]
+		endif
+
+		;Two sets of conditions: one for when we weren't passed indices, and one for when we were.
+		While (indices == None && iterations < terminate) || (indices != None && i >= 0 && iterations < indices.Length)
 			if replaceInContainer && RememberedLocations[i] != None	&& RememberedLocations[i].GetBaseObject() != XMarker ;We're replacing items in containers and have a container to replace to.
 				if CanReplaceInContainer()
 					if notifyOnReplaceInContainer && notify < 2
@@ -512,8 +538,12 @@ Function HandleDropAllHotkey()
 
 			endif
 
-			i = GetPreviousStackIndex(i)
 			iterations += 1
+			if indices == None
+				i = GetPreviousStackIndex(i)
+			else
+				i = indices[iterations]
+			endif
 		EndWhile
 
 		ForgetScript.GoToState("Enabled")
@@ -534,31 +564,30 @@ Function HandleDropAllHotkey()
 	endif
 EndFunction
 
-Function HandleKeepAllHotkey()
-	{Keep all remembered items.}
+Function HandleKeepAllHotkey(int[] indices = None)
+	{Keep all remembered items. Doubles as a general-purpose function for keeping the items at the passed-in indices. The indices must be an array of indices in top-down stack order, either full or terminated with -1.}
 	if RememberedItems[currentIndex] != None
 		if notifyOnKeep
 			QuickDropAllItemsKept.Show()
 		endif
 
-		While RememberedItems[currentIndex] != None
-			RemoveIndexFromStack(currentIndex)
-		EndWhile
+		;Two separate while loops, one for no passed-in indices and one for passed-in indices.
+		if indices == None
+			While RememberedItems[currentIndex] != None
+				RemoveIndexFromStack(currentIndex)
+			EndWhile
 
-		currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
+			currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
+
+		else
+			int iterations = 0
+			While indices[iterations] >= 0 && iterations < indices.Length
+				RemoveIndexFromStack(indices[iterations])
+				iterations += 1
+			EndWhile
+		endif
 	else
 		QuickDropNoItemsRemembered.Show()
-	endif
-EndFunction
-
-Function HandleToggleRememberingHotkey()
-	{Enable the remember script and display the appropriate message.}
-	if RememberScript.GetState() == "Enabled"
-		RememberScript.GoToState("Disabled")
-		QuickDropRememberingOff.Show()
-	else
-		RememberScript.GoToState("Enabled")
-		QuickDropRememberingOn.Show()
 	endif
 EndFunction
 
