@@ -845,9 +845,9 @@ Function SwapIndices(int indexOne, int indexTwo)
 	RememberedQuantities[indexOne] = RememberedQuantities[indexTwo]
 	RememberedQuantities[indexTwo] = tempQuantity
 
-	ObjectReference tempContainer = RememberedLocations[indexOne]
+	ObjectReference tempLocation = RememberedLocations[indexOne]
 	RememberedLocations[indexOne] = RememberedLocations[indexTwo]
-	RememberedLocations[indexTwo] = tempContainer
+	RememberedLocations[indexTwo] = tempLocation
 EndFunction
 
 Function AlignAndResizeStack(int newStackSize = -1)
