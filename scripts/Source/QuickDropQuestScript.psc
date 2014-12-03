@@ -333,7 +333,6 @@ Function HandleShowHotkey()
 	endif
 EndFunction
 
-<<<<<<< HEAD
 Function HandleDropHotkey()
 	{Drop the current item and move to the next.}
 	if Stack.depth

@@ -233,6 +233,57 @@ State StackKeepSelected
 	EndEvent
 EndState
 
+Function SwapIndices(int indexOne, int indexTwo)
+	{Swap the given indices. Wrapper around QuickDropQuest.SwapIndices that additionally handles swapping menu data.}
+	bool tempSelected = selected[indexOne]
+	selected[indexOne] = selected[indexTwo]
+	selected[indexTwo] = tempSelected
+
+	int tempStackToggleID = stackToggleIDs[indexOne]
+	stackToggleIDs[indexOne] = stackToggleIDs[indexTwo]
+	stackToggleIDs[indexTwo] = tempStackToggleID
+
+	QuickDropQuest.GoToState("Working")
+	QuickDropQuest.SwapIndices(indexOne, indexTwo)
+	QuickDropQuest.GoToState("Ready")
+EndFunction
+
+State StackMoveUp
+	Event OnSelectST()
+		int swapUp = selected.Find(True)
+		SwapIndices(swapUp, QuickDropQuest.GetNextStackIndex(swapUp))
+		ForcePageReset()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Move the selected item(s) up one slot in the stack.")
+	EndEvent
+EndState
+
+State StackMoveDown
+	Event OnSelectST()
+		int swapDown = selected.Find(True)
+		SwapIndices(swapDown, QuickDropQuest.GetPreviousStackIndex(swapDown))
+		ForcePageReset()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Move the selected item(s) down one slot in the stack.")
+	EndEvent
+EndState
+
+State StackSwapSelected
+	Event OnSelectST()
+		int swapOne = selected.Find(True)
+		SwapIndices(swapOne, selected.Find(True, swapOne + 1))
+		ForcePageReset()
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Swap the stack slots of the selected item(s).")
+	EndEvent
+EndState
+
 State StackInvertSelection
 	Event OnSelectST()
 		int i = QuickDropQuest.currentIndex
