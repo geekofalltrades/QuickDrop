@@ -280,7 +280,56 @@ State StackSwapSelected
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Swap the stack slots of the selected item(s).")
+		SetInfoText("Swap the stack slots of the selected items.")
+	EndEvent
+EndState
+
+State StackCombineUp
+	Event OnSelectST()
+		int[] indices = GetSelectedIndices()
+		int combineTo = indices[0]
+		int i = 1
+
+		While indices[i] >= 0 && i < indices.Length
+			QuickDropQuest.RememberedQuantities[combineTo] += QuickDropQuest.RememberedQuantities[indices[i]]
+			RemoveIndexFromStack(indices[i])
+			combineTo = QuickDropQuest.GetPreviousStackIndex(combineTo)	;We just pulled a slot out from the middle of the stack, so adjust our top-most index down.
+			i += 1
+		EndWhile
+
+		QuickDropQuest.RememberedLocations[combineTo] = None
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Combine selected items of the same type in the top-most selected stack slot.\nThis clears any saved world location or container data for these items.")
+	EndEvent
+EndState
+
+State StackCombineDown
+	Event OnSelectST()
+		int[] indices = GetSelectedIndices()
+		int combineTo
+		int i
+
+		i = indices.Find(-1)
+		if i < 0
+			combineTo = indices[-1]
+		else
+			combineTo = indices[i - 1]
+		endif
+
+		i = 0
+		While indices[i] != combineTo
+			QuickDropQuest.RememberedQuantities[combineTo] += QuickDropQuest.RememberedQuantities[indices[i]]
+			RemoveIndexFromStack(indices[i])
+			i += 1
+		EndWhile
+
+		QuickDropQuest.RememberedLocations[combineTo] = None
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Combine selected items of the same type in the bottom-most selected stack slot.\nThis clears any saved world location or container data for these items.")
 	EndEvent
 EndState
 
