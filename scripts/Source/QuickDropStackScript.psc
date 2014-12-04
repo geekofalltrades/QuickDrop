@@ -43,11 +43,11 @@ int Property top = 9 Auto
 int Property size = 5 Auto
 {The size of the stack.}
 
-FormList Property DuplicateItems Auto
-{A FormList containing items that are duplicated in this stack.}
-
 Static Property XMarker Auto
 {An XMarker, of the type used to mark world locations. Needed in this script for comparison operations.}
+
+Form[] duplicates
+{An array containing items that are duplicated in this stack.}
 
 Event OnInit()
 	{Perform script setup.}
@@ -94,294 +94,101 @@ Function ClearDuplicates()
 	{Don't clear duplicate items while not Ready.}
 EndFunction
 
+bool Function ClearDuplicates(Form query)
+	{Always assume no duplication while not Ready.}
+	return False
+EndFunction
+
 Auto State Ready
-	;In Ready state, state-altering entry points into the stack are available to callers.
-
+	;In Ready state, state-dependent entry points into the stack are available to callers.
 	Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
-		{Push a new item onto the stack.}
-		GoToState("Working")
-
-		top = GetNextStackIndex()
-		RememberedItems[top] = itemToRemember
-		RememberedQuantities[top] = quantityToRemember
-		RememberedLocations[top] = locationToRemember
-
-		GoToState("Ready")
+		{Disallow pushing while not Ready.}
 	EndFunction
 
 	Function Pop()
-		{Pop an item from the stack. The item is not returned.}
-		GoToState("Working")
-
-		;If we have world location data stored at the top index.
-		if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker
-			RememberedLocations[index].Delete()	;Mark the XMarker for deletion.
-		endif
-
-		RememberedItems[top] = None
-		RememberedLocations[top] = None
-		top = GetPreviousStackIndex()
-
-		GoToState("Ready")
+		{Disallow popping while not Ready.}
 	EndFunction
 
 	Function Remove(int index)
-		{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
-		GoToState("Working")
-
-		;If we have world location data stored at the index being removed.
-		if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker
-			RememberedLocations[index].Delete()	;Mark the XMarker for deletion.
-		endif
-
-		;Shift stack down, overwriting this index.
-		While index != top
-			int nextIndex = GetNextStackIndex(index)
-			RememberedItems[index] = RememberedItems[nextIndex]
-			RememberedQuantities[index] = RememberedQuantities[nextIndex]
-			RememberedLocations[index] = RememberedLocations[nextIndex]
-			index = nextIndex
-		EndWhile
-
-		;Clear the top item of the stack.
-		RememberedItems[top] = None
-		RememberedLocations[top] = None
-		top = GetPreviousStackIndex()
-
-		GoToState("Ready")
+		{Disallow removing while not Ready.}
 	EndFunction
 
 	Function SetSize(int newSize)
-		{Set a new size. Thin wrapper around AlignAndResizeStack.}
-		if newMaxRemembered != size    ;If the size of the stack is actually changing.
-			GoToState("Working")
-
-			AlignAndResizeStack(newSize)
-			size = newSize
-
-			GoToState("Ready")
-		endif
+		{Don't adjust the size of the stack while not Ready.}
 	EndFunction
 
 	Function RecordDuplicates()
-		{Record duplicated items in the duplicates FormList.}
+		{Don't record duplicate items while not Ready.}
+	EndFunction
+
+	Function ClearDuplicates()
+		{Don't clear duplicate items while not Ready.}
+	EndFunction
+
+	bool Function ClearDuplicates(Form query)
+		{Always assume no duplication while not Ready.}
+		return False
 	EndFunction
 EndState
 
-Function HandleRememberAll(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
-	{Remember the stack of items picked up to one stack slot, or in multiple stacks according to the modifier.}
-	int i = 0
+Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+	{Push a new item onto the stack.}
+	GoToState("Working")
 
-	if pickUpBehaviorModifier[0]
-		While quantityToRemember > pickUpBehaviorModifier[0] && i < size
-			RememberNewItem(itemToRemember, pickUpBehaviorModifier[0], containerToRemember)
-			quantityToRemember -= pickUpBehaviorModifier[0]
-			i += 1
-		EndWhile
-	endif
+	top = GetNextStackIndex(top)
+	RememberedItems[top] = itemToRemember
+	RememberedQuantities[top] = quantityToRemember
+	RememberedLocations[top] = locationToRemember
 
-	if quantityToRemember && i < size
-		RememberNewItem(itemToRemember, quantityToRemember, containerToRemember)
-	endif
+	GoToState("Ready")
 EndFunction
 
-Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
-	{Remember the stack of items picked up in a combined stack slot of this type, up to the amount allowed by the modifier.}
-	int existingItemIndex
+Function _Pop()
+	{Pop an item from the stack. The item is not returned.}
+	GoToState("Working")
 
-	if QuickDropDuplicateItems.HasForm(itemToRemember)  ;If this type of item currently occupies two or more slots in the stack.
-		int[] indices = FindAllInstancesInStack(itemToRemember) ;Get a list of the stack slots occupied by this item.
-		SwapIndexToTop(indices[0])  ;Swap the first instance of this item to the top of the stack.
-
-		int i = 1
-		While i < indices.Length && indices[i] >= 0 ;Add all other slots to the first one.
-			RememberedQuantities[top] = RememberedQuantities[top] + RememberedQuantities[indices[i]]
-			RemoveIndexFromStack(indices[i])
-			i += 1
-		EndWhile
-
-		RememberedLocations[top] = None    ;Clear any replacement data, as it's no longer valid.
-
-		if pickUpBehaviorModifier[1] && RememberedQuantities[top] > pickUpBehaviorModifier[1]  ;If we have more remembered than we're allowed, forget some.
-			RememberedQuantities[top] = pickUpBehaviorModifier[1]
-		endif
-
-		QuickDropDuplicateItems.RemoveAddedForm(itemToRemember) ;Remove this item from the list of duplicates.
-		existingItemIndex = top    ;Record that this item is now on the top of the stack.
-	else    ;If this item occupies one or no slots in the stack.
-		existingItemIndex = RememberedItems.Find(itemToRemember)    ;Search for this item in the stack.
+	;If we have world location data stored at the top index.
+	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker
+		RememberedLocations[index].Delete()	;Mark the XMarker for deletion.
 	endif
 
-	if existingItemIndex < 0    ;If we don't already have this item in the stack.
-		;Remember replacement data until we combine stack slots, as it will be valid until then.
-		if !pickUpBehaviorModifier[1] || quantityToRemember <= pickUpBehaviorModifier[1]
-			RememberNewItem(itemToRemember, quantityToRemember, containerToRemember)
-		else
-			RememberNewItem(itemToRemember, pickUpBehaviorModifier[1], containerToRemember)
-		endif
-	else                        ;If we do have this item in the stack somewhere.
-		SwapIndexToTop(existingItemIndex)           ;Move it to the top and add the number we just picked up.
-		if !pickUpBehaviorModifier[1] || RememberedQuantities[top] + quantityToRemember <= pickUpBehaviorModifier[1]
-			RememberedQuantities[top] = RememberedQuantities[top] + quantityToRemember
-		else
-			RememberedQuantities[top] = pickUpBehaviorModifier[1]
-		endif
-		RememberedLocations[top] = None    ;Clear any replacement data, as it's no longer valid.
-	endif
+	RememberedItems[top] = None
+	RememberedLocations[top] = None
+	top = GetPreviousStackIndex(top)
+
+	GoToState("Ready")
 EndFunction
 
-Function HandleRememberEach(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
-	{Remember the items individually, up to the amount allowed by the modifier.}
-	if pickUpBehaviorModifier[2] && pickUpBehaviorModifier[2] < quantityToRemember
-		quantityToRemember = pickUpBehaviorModifier[2]
+Function _Remove(int index)
+	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
+	GoToState("Working")
+
+	;If we have world location data stored at the index being removed.
+	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker
+		RememberedLocations[index].Delete()	;Mark the XMarker for deletion.
 	endif
 
-	int i = 0
-	While i < quantityToRemember && i < size
-		RememberNewItem(itemToRemember, 1, containerToRemember)
-		i += 1
+	;Shift stack down, overwriting this index.
+	While index != top
+		int nextIndex = GetNextStackIndex(index)
+		RememberedItems[index] = RememberedItems[nextIndex]
+		RememberedQuantities[index] = RememberedQuantities[nextIndex]
+		RememberedLocations[index] = RememberedLocations[nextIndex]
+		index = nextIndex
 	EndWhile
-EndFunction
 
-Function HandleRememberSome(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
-	{Remember in one stack some of these items, as allowed by the modifier.}
-	RememberNewItem(itemToRemember, pickUpBehaviorModifier[3], containerToRemember)
-EndFunction
-
-ObjectReference Function GetLocationRef(ObjectReference containerRef)
-	{Return the appropriate world location or container reference to remember, if either.}
-	if containerRef != None && (rememberContainer || replaceInContainer)    ;If we have a container and are remembering containers.
-		return containerRef
-
-	elseif containerRef == None && (rememberWorldLocation || replaceInWorld)    ;If we don't have a container and are remembering world locations.
-		ObjectReference toReturn = locationXMarker
-		locationXMarker = None  ;Clear our reference to locationXMarker, so that a new XMarker is created on next CrosshairRefChange.
-		return toReturn
-
-	endif
-
-	return None ;Otherwise, don't remember any location data.
-EndFunction
-
-bool Function CanReplaceInContainer(int index = -1)
-	{Determines whether the item at index can currently be replaced in its container.}
-	if index < 0
-		index = top
-	endif
-
-	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() != XMarker && (!replaceInContainerDistance || PlayerRef.GetDistance(RememberedLocations[index]) <= replaceInContainerDistance)
-		return True
-	endif
-
-	return False
-EndFunction
-
-bool Function CanReplaceInWorld(int index = -1)
-	{Determines whether the item at index can currently be replaced in its original world location.}
-	if index < 0
-		index = top
-	endif
-
-	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker && (!replaceInWorldDistance || PlayerRef.GetDistance(RememberedLocations[index]) <= replaceInWorldDistance)
-		return True
-	endif
-
-	return False
-EndFunction
-
-int Function GetNextStackIndex(int index = -1)
-	{Get the next stack index from the passed-in index, or from top if no index is passed.}
-	if index < 0
-		index = top
-	endif
-	index += 1
-	if index >= size
-		return 0
-	endif
-	return index
-EndFunction
-
-int Function GetPreviousStackIndex(int index = -1)
-	{Get the previous stack index from the passed-in index, or from top if no index is passed.}
-	if index < 0
-		index = top
-	endif
-	index -= 1
-	if index < 0
-		return size - 1
-	endif
-	return index
-EndFunction
-
-int Function IncrementCurrentIndex()
-	{Increment top, keeping it within the bounds set by size.}
-	top = GetNextStackIndex()
-	return top
-EndFunction
-
-int Function DecrementCurrentIndex()
-	{Decrement top, keeping it within the bounds set by size.}
+	;Clear the top item of the stack.
+	RememberedItems[top] = None
+	RememberedLocations[top] = None
 	top = GetPreviousStackIndex()
-	return top
+
+	GoToState("Ready")
 EndFunction
 
-int Function CountRememberedItems()
-	{Count the number of remembered item stack slots that are filled.}
-	int i = top
-	int iterations = 0
-	int rememberedCount = 0
-
-	While RememberedItems[i] != None && iterations < size
-		rememberedCount += 1
-		i = GetPreviousStackIndex(i)
-		iterations += 1
-	EndWhile
-
-	return rememberedCount
-EndFunction
-
-int[] Function FindAllInstancesInStack(Form searchFor)
-	{Starting from top, find all stack indices occupied by searchFor. Return as an int array populated with indices, terminated by -1 if not full.}
-	int[] results = new int[10]
-	int resultsIndex = 0
-
-	;Mock a do-while structure.
-	if RememberedItems[top] == searchFor
-		results[resultsIndex] = top
-		resultsIndex += 1
-	endif
-
-	int i = GetPreviousStackIndex(top)
-	While i != top && RememberedItems[i] != None
-		if RememberedItems[i] == searchFor
-			results[resultsIndex] = i
-			resultsIndex += 1
-		endif
-		i = GetPreviousStackIndex(i)
-	EndWhile
-
-	if resultsIndex < results.Length    ;If we haven't filled the results array.
-		results[resultsIndex] = -1      ;Terminate it with -1.
-	endif
-
-	return results
-EndFunction
-
-Function SwapIndexToTop(int index)
-	{Move the item(s) at index to the top of the stack, pushing down the others.}
-	if index != top    ;No-op if this index is already the top of the stack.
-		Form itemToTop = RememberedItems[index]
-		int quantityToTop = RememberedQuantities[index]
-		ObjectReference locationToTop = RememberedLocations[index]
-
-		RemoveIndexFromStack(index)
-		RememberNewItem(itemToTop, quantityToTop, locationToTop)
-		RememberedLocations[top] = locationToTop   ;Ensure that the existing location was swapped to the top regardless of current location remembering settings.
-	endif
-EndFunction
-
-Function SwapIndices(int indexOne, int indexTwo)
+Function _Swap(int indexOne, int indexTwo)
 	{Swap the item(s) at the given indices.}
+	GoToState("Working")
+
 	Form tempItem = RememberedItems[indexOne]
 	RememberedItems[indexOne] = RememberedItems[indexTwo]
 	RememberedItems[indexTwo] = tempItem
@@ -393,6 +200,140 @@ Function SwapIndices(int indexOne, int indexTwo)
 	ObjectReference tempLocation = RememberedLocations[indexOne]
 	RememberedLocations[indexOne] = RememberedLocations[indexTwo]
 	RememberedLocations[indexTwo] = tempLocation
+
+	GoToState("Ready")
+EndFunction
+
+Function _SwapToTop(int index)
+	{Move the item(s) at index to the top of the stack, pushing down the others. Convenience method replacing }
+	if index != top    ;No-op if this index is already the top of the stack.
+		Form itemToTop = RememberedItems[index]
+		int quantityToTop = RememberedQuantities[index]
+		ObjectReference locationToTop = RememberedLocations[index]
+
+		Remove(index)
+		RememberNewItem(itemToTop, quantityToTop, locationToTop)
+		RememberedLocations[top] = locationToTop   ;Ensure that the existing location was swapped to the top regardless of current location remembering settings.
+	endif
+EndFunction
+
+Function _SetSize(int newSize)
+	{Set a new size. Thin wrapper around AlignAndResizeStack.}
+	if newMaxRemembered != size    ;If the size of the stack is actually changing.
+		GoToState("Working")
+
+		AlignAndResizeStack(newSize)
+		size = newSize
+
+		GoToState("Ready")
+	endif
+EndFunction
+
+Function _RecordDuplicates()
+	{Record duplicated items in the duplicates array.}
+	GoToState("Working")
+
+	;The most space we will ever need to record duplicate items is N/2, where N is the Length of the RememberedItems array.
+	;This is the case in which the stack is full and every item is duplicated exactly one time.
+	duplicates = new Form[5]
+
+	int duplicateIndex = 0
+	int i = 0
+	While i < RememberedItems.Length - 1
+		if RememberedItems[i] != None && RememberedItems.Find(RememberedItems[i], i + 1) >= 0 && duplicates.Find(RememberedItems[i]) < 0
+			duplicates[duplicateIndex] = RememberedItems[i]
+			duplicateIndex += 1
+		endif
+		i += 1
+	EndWhile
+
+	GoToState("Ready")
+EndFunction
+
+Function _ClearDuplicates()
+	{Clear the duplicated items.}
+	GoToState("Working")
+	duplicates = None
+	GoToState("Ready")
+EndFunction
+
+bool Function _HasDuplicates(Form query)
+	{Check whether the given form is recorded as a duplicate.}
+	if duplicates != None && duplicates.Find(query) >= 0
+		return True
+	endif
+	return False
+EndFunction
+
+int Function GetNextStackIndex(int index)
+	{Get the next stack index from the passed-in index.}
+	index += 1
+	if index >= size
+		return 0
+	endif
+	return index
+EndFunction
+
+int Function GetPreviousStackIndex(int index)
+	{Get the previous stack index from the passed-in index.}
+	index -= 1
+	if index < 0
+		return size - 1
+	endif
+	return index
+EndFunction
+
+int Function CountRememberedItems()
+	{Count the number of remembered item stack slots that are filled.}
+	int remembered
+
+	;Add the count of items from the first array index up to and including the top index.
+	int firstNone = RememberedItems.Rfind(None, top)
+	if firstNone == top		;The stack is empty.
+		return 0
+	elseif firstNone < 0	;The array is full from its first index to the top index.
+		remembered = top + 1
+	else					;The array begins with one or more "None"s.
+		remembered = top - firstNone
+	endif
+
+	;Add the count items from but NOT including the top index up to the last array index.
+	int lastNone = RememberedItems.Find(None, top)
+	if lastNone < 0	;The array is full from the top index to its last index.
+		remembered += RememberedItems.Length - top - 1
+	else			;The array ends with one or more "None"s.
+		remembered += lastNone - top - 1
+	endif
+
+	return remembered
+EndFunction
+
+int[] Function FindAllInstancesInStack(Form searchFor)
+	{Starting from top, find all stack indices occupied by searchFor. Return as an int array populated with indices, terminated by -1 if not full.}
+	int[] results = new int[10]
+	int resultsIndex = 0
+
+	;Search from the top index to the first array index.
+	int i = RememberedItems.Rfind(searchFor, top)
+	While i >= 0
+		results[resultsIndex] = i
+		resultsIndex += 1
+		i = RememberedItems.Rfind(searchFor, i - 1)
+	EndWhile
+
+	;Search from the last array index to the top index.
+	i = RememberedItems.Rfind(searchFor)
+	While i > top
+		results[resultsIndex] = i
+		resultsIndex += 1
+		i = RememberedItems.Rfind(searchFor, i - 1)
+	EndWhile
+
+	if resultsIndex < results.Length    ;If we haven't filled the results array.
+		results[resultsIndex] = -1      ;Terminate it with -1.
+	endif
+
+	return results
 EndFunction
 
 Function AlignAndResizeStack(int newStackSize = -1)
