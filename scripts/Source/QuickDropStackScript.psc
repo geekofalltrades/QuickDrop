@@ -101,24 +101,41 @@ EndFunction
 
 Auto State Ready
 	;In Ready state, state-dependent entry points into the stack are available to callers.
+	;These are driver functions that call underlying workhorse functions, so that stack methods
+	;can reliably make internal calls to other state-dependent stack methods.
+
 	Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
-		{Disallow pushing while not Ready.}
+		{Push a new item onto the stack.}
+		GoToState("Working")
+		_Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+		GoToState("Ready")
 	EndFunction
 
 	Function Pop()
-		{Disallow popping while not Ready.}
+		{Pop an item from the stack. The item is not returned.}
+		GoToState("Working")
+		_Pop()
+		GoToState("Ready")
 	EndFunction
 
 	Function Remove(int index)
-		{Disallow removing while not Ready.}
+		{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
+		GoToState("Working")
+		_Remove(index)
+		GoToState("Ready")
 	EndFunction
 
 	Function SetSize(int newSize)
-		{Don't adjust the size of the stack while not Ready.}
+		{Set a new size. Thin wrapper around AlignAndResizeStack.}
+		GoToState("Working")
+		_SetSize(newSize)
+		GoToState("Ready")
 	EndFunction
 
 	Function RecordDuplicates()
-		{Don't record duplicate items while not Ready.}
+		GoToState("Working")
+		_RecordDuplicates()
+		GoToState("Ready")
 	EndFunction
 
 	Function ClearDuplicates()
