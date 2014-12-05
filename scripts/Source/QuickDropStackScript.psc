@@ -82,6 +82,11 @@ Function Remove(int index)
 	{Disallow removing while not Ready.}
 EndFunction
 
+bool Function Empty()
+	{Always assume the stack is empty while not Ready.}
+	return True
+EndFunction
+
 Function SetSize(int newSize)
 	{Don't adjust the size of the stack while not Ready.}
 EndFunction
@@ -94,7 +99,7 @@ Function ClearDuplicates()
 	{Don't clear duplicate items while not Ready.}
 EndFunction
 
-bool Function ClearDuplicates(Form query)
+bool Function HasDuplicates(Form query)
 	{Always assume no duplication while not Ready.}
 	return False
 EndFunction
@@ -125,44 +130,54 @@ Auto State Ready
 		GoToState("Ready")
 	EndFunction
 
+	bool Function Empty()
+		{Return whether or not the stack is empty.}
+		GoToState("Working")
+		bool empty = _Empty()
+		GoToState("Ready")
+		return empty
+	EndFunction
+
 	Function SetSize(int newSize)
-		{Set a new size. Thin wrapper around AlignAndResizeStack.}
+		{Set a new size and align the stack.}
 		GoToState("Working")
 		_SetSize(newSize)
 		GoToState("Ready")
 	EndFunction
 
 	Function RecordDuplicates()
+		{Record duplicated items in the duplicates array.}
 		GoToState("Working")
 		_RecordDuplicates()
 		GoToState("Ready")
 	EndFunction
 
 	Function ClearDuplicates()
-		{Don't clear duplicate items while not Ready.}
+		{Clear the duplicated items.}
+		GoToState("Working")
+		_ClearDuplicates()
+		GoToState("Ready")
 	EndFunction
 
-	bool Function ClearDuplicates(Form query)
-		{Always assume no duplication while not Ready.}
-		return False
+	bool Function HasDuplicates(Form query)
+		{Check whether the given form is recorded as a duplicate.}
+		GoToState("Working")
+		bool duplicates = _HasDuplicates(query)
+		GoToState("Ready")
+		return duplicates
 	EndFunction
 EndState
 
 Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
 	{Push a new item onto the stack.}
-	GoToState("Working")
-
 	top = GetNextStackIndex(top)
 	RememberedItems[top] = itemToRemember
 	RememberedQuantities[top] = quantityToRemember
 	RememberedLocations[top] = locationToRemember
-
-	GoToState("Ready")
 EndFunction
 
 Function _Pop()
 	{Pop an item from the stack. The item is not returned.}
-	GoToState("Working")
 
 	;If we have world location data stored at the top index.
 	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker
@@ -172,13 +187,10 @@ Function _Pop()
 	RememberedItems[top] = None
 	RememberedLocations[top] = None
 	top = GetPreviousStackIndex(top)
-
-	GoToState("Ready")
 EndFunction
 
 Function _Remove(int index)
 	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
-	GoToState("Working")
 
 	;If we have world location data stored at the index being removed.
 	if RememberedLocations[index] != None && RememberedLocations[index].GetBaseObject() == XMarker
@@ -198,13 +210,23 @@ Function _Remove(int index)
 	RememberedItems[top] = None
 	RememberedLocations[top] = None
 	top = GetPreviousStackIndex()
+EndFunction
 
-	GoToState("Ready")
+bool Function _Empty()
+	{Return whether or not the stack is empty.}
+	return RememberedItems[top] == None
+EndFunction
+
+Function _SetSize(int newSize)
+	{Set a new size and align the stack.}
+	if newSize != size    ;If the size of the stack is actually changing.
+		size = newSize
+		Align()
+	endif
 EndFunction
 
 Function _Swap(int indexOne, int indexTwo)
 	{Swap the item(s) at the given indices.}
-	GoToState("Working")
 
 	Form tempItem = RememberedItems[indexOne]
 	RememberedItems[indexOne] = RememberedItems[indexTwo]
@@ -217,8 +239,6 @@ Function _Swap(int indexOne, int indexTwo)
 	ObjectReference tempLocation = RememberedLocations[indexOne]
 	RememberedLocations[indexOne] = RememberedLocations[indexTwo]
 	RememberedLocations[indexTwo] = tempLocation
-
-	GoToState("Ready")
 EndFunction
 
 Function _SwapToTop(int index)
@@ -234,21 +254,8 @@ Function _SwapToTop(int index)
 	endif
 EndFunction
 
-Function _SetSize(int newSize)
-	{Set a new size. Thin wrapper around AlignAndResizeStack.}
-	if newMaxRemembered != size    ;If the size of the stack is actually changing.
-		GoToState("Working")
-
-		AlignAndResizeStack(newSize)
-		size = newSize
-
-		GoToState("Ready")
-	endif
-EndFunction
-
 Function _RecordDuplicates()
 	{Record duplicated items in the duplicates array.}
-	GoToState("Working")
 
 	;The most space we will ever need to record duplicate items is N/2, where N is the Length of the RememberedItems array.
 	;This is the case in which the stack is full and every item is duplicated exactly one time.
@@ -263,15 +270,11 @@ Function _RecordDuplicates()
 		endif
 		i += 1
 	EndWhile
-
-	GoToState("Ready")
 EndFunction
 
 Function _ClearDuplicates()
 	{Clear the duplicated items.}
-	GoToState("Working")
 	duplicates = None
-	GoToState("Ready")
 EndFunction
 
 bool Function _HasDuplicates(Form query)
@@ -300,7 +303,7 @@ int Function GetPreviousStackIndex(int index)
 	return index
 EndFunction
 
-int Function CountRememberedItems()
+int Function Depth()
 	{Count the number of remembered item stack slots that are filled.}
 	int remembered
 
@@ -326,7 +329,7 @@ int Function CountRememberedItems()
 EndFunction
 
 int[] Function FindAllInstancesInStack(Form searchFor)
-	{Starting from top, find all stack indices occupied by searchFor. Return as an int array populated with indices, terminated by -1 if not full.}
+	{Starting from top, find all stack indices occupied by searchFor. Return an int array populated with indices, terminated by -1 if not full.}
 	int[] results = new int[10]
 	int resultsIndex = 0
 
@@ -353,46 +356,63 @@ int[] Function FindAllInstancesInStack(Form searchFor)
 	return results
 EndFunction
 
-Function AlignAndResizeStack(int newStackSize = -1)
-	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. Optionally re-size the stack.}
-	if RememberedItems[top] == None    ;If the stack is empty.
-		top = RememberedItems.Length - 1   ;Reset top so the next item remembered is at 0.
-	else    ;If we have at least one item remembered.
-		Form[] newItems = new Form[10]              ;Build new, aligned stack arrays.
+int Function Find(Form query, int index = -10)
+	{Search down the stack for the first instance of query from the passed-in index. Returns -1 if the query is not found.}
+	if index == -10	;Start from the top of the stack if no index was passed in.
+		index = top
+	endif
+
+	;This is less than ideal, because in the worst case we search the portion of
+	;the array below index twice. Rfind is implemented in C++, though, and so is
+	;faster than a limited search loop in Papyrus would be.
+	int i = RememberedItems.Rfind(query, index)
+	if i < 0
+		i = RememberedItems.Rfind(query)
+		if i <= top
+			i = -1
+		endif
+	endif
+
+	return i
+EndFunction
+
+Function Align()
+	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property.}
+	if RememberedItems[top] == None		;If the stack is empty.
+		top = RememberedItems.Length - 1	;Reset top so the next item remembered is at 0.
+
+	else	;If we have at least one item remembered.
+		Form[] newItems = new Form[10]		;Build new, aligned stack arrays.
 		int[] newQuantities = new int[10]
-		ObjectReference[] newContainers = new ObjectReference[10]
+		ObjectReference[] newLocations = new ObjectReference[10]
 
 		int i = 0
 		While i < newItems.Length
 			newItems[i] = None
 			newQuantities[i] = 0
-			newContainers[i] = None
+			newLocations[i] = None
 			i += 1
 		EndWhile
 
-		if newStackSize < 1 ;If no argument was passed, keep the stack the same size.
-			newStackSize = size
-		endif
-
-		int rememberedCount = CountRememberedItems()    ;Count the number of slots we currently have filled.
-		if rememberedCount >= newStackSize  ;If the currently occupied slots match or overflow the stack size.
-			i = newStackSize - 1                ;Then we start our stack at the highest allowed position.
-		else                                ;If the currently occupied slots don't fill the new limit.
-			i = rememberedCount - 1             ;Then we start our stack as high as needed to accomodate all slots.
+		int rememberedCount = Depth()	;Count the number of slots we currently have filled.
+		if rememberedCount >= size	;If the currently occupied slots match or overflow the stack size.
+			i = size - 1				;Then we start our stack at the highest allowed position.
+		else						;If the currently occupied slots don't fill the new limit.
+			i = rememberedCount - 1		;Then we start our stack as high as needed to accomodate all slots.
 		endif
 		int newCurrentIndex = i
 
 		While i >= 0
 			newItems[i] = RememberedItems[top]
 			newQuantities[i] = RememberedQuantities[top]
-			newContainers[i] = RememberedLocations[top]
-			DecrementCurrentIndex()
+			newLocations[i] = RememberedLocations[top]
+			top = GetPreviousStackIndex(top)
 			i -= 1
 		EndWhile
 
 		RememberedItems = newItems
 		RememberedQuantities = newQuantities
-		RememberedLocations = newContainers
+		RememberedLocations = newLocations
 		top = newCurrentIndex
 	endif
 EndFunction
