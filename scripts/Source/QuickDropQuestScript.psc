@@ -58,9 +58,6 @@ int Property keepAllHotkey = -1 Auto
 int Property toggleRememberingHotkey = -1 Auto
 {Toggle remembering.}
 
-int Property maxRemembered = 5 Auto
-{The number of items to remember.}
-
 bool Property forgetOnRemoved = True Auto
 {How to forget items when removed separately. True = Forget first, False = Forget last.}
 ;Forget first means treat any items removed from the inventory as the most recent ones picked up. They're removed from the remembered
@@ -233,7 +230,7 @@ Auto State Ready
 	EndFunction
 
 	Function AdjustMaxRemembered(int newMaxRemembered)
-		{Set a new maxRemembered. Thin wrapper around AlignAndResizeStack.}
+		{Set a new stack size.}
 		GoToState("Working")
 		Stack.SetSize(newMaxRemembered)
 		GoToState("Ready")
@@ -387,7 +384,7 @@ EndFunction
 
 Function HandleShowHotkey()
 	{Display the current item.}
-	if Stack.RememberedItems[Stack.top] != None
+	if !Stack.Empty()
 		Debug.Notification("QuickDrop: Current: " + Stack.RememberedItems[Stack.top].GetName() + " (" + Stack.RememberedQuantities[Stack.top] + ").")
 	else
 		QuickDropNoItemsRemembered.Show()
@@ -396,7 +393,7 @@ EndFunction
 
 Function HandleKeepHotkey()
 	{Keep the current item and move to the next.}
-	if Stack.RememberedItems[Stack.top] != None
+	if !Stack.Empty()
 		if notifyOnKeep
 			Debug.Notification("QuickDrop: " + Stack.RememberedItems[Stack.top].GetName() + " (" + Stack.RememberedQuantities[Stack.top] + ") kept.")
 		endif
@@ -409,7 +406,7 @@ EndFunction
 
 Function HandleDropAllHotkey()
 	{Drop/replace all remembered items. Operates as if we're attempting a drop/replace on each individual item.}
-	if Stack.RememberedItems[Stack.top] != None
+	if !Stack.Empty()
 		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved when these items are dropped.
 
 		int notify = 0	;What type of notification to display for this action.
@@ -488,7 +485,7 @@ Function HandleDropAllHotkey()
 			QuickDropSomeItemsNotDropped.Show()
 		endif
 
-		if Stack.RememberedItems[Stack.top] == None	;If we succeeded in clearing the entire stack.
+		if Stack.Empty()	;If we succeeded in clearing the entire stack.
 			currentIndex = RememberedItems.Length - 1	;Reset to last index so the next call to IncrementCurrentIndex returns 0.
 		endif
 
@@ -500,7 +497,7 @@ EndFunction
 
 Function HandleKeepAllHotkey()
 	{Keep all remembered items.}
-	if Stack.RememberedItems[Stack.top] != None
+	if !Stack.Empty()
 		if notifyOnKeep
 			QuickDropAllItemsKept.Show()
 		endif
@@ -531,14 +528,14 @@ Function HandleRememberAll(Form itemToRemember, int quantityToRemember, ObjectRe
 	int i = 0
 
 	if pickUpBehaviorModifier[0]
-		While quantityToRemember > pickUpBehaviorModifier[0] && i < maxRemembered
+		While quantityToRemember > pickUpBehaviorModifier[0] && i < Stack.size
 			RememberNewItem(itemToRemember, pickUpBehaviorModifier[0], containerToRemember)
 			quantityToRemember -= pickUpBehaviorModifier[0]
 			i += 1
 		EndWhile
 	endif
 
-	if quantityToRemember && i < maxRemembered
+	if quantityToRemember && i < Stack.size
 		RememberNewItem(itemToRemember, quantityToRemember, containerToRemember)
 	endif
 EndFunction
@@ -547,9 +544,9 @@ Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectRe
 	{Remember the stack of items picked up in a combined stack slot of this type, up to the amount allowed by the modifier.}
 	int existingItemIndex
 
-	if QuickDropDuplicateItems.HasForm(itemToRemember)	;If this type of item currently occupies two or more slots in the stack.
-		int[] indices = FindAllInstancesInStack(itemToRemember)	;Get a list of the stack slots occupied by this item.
-		SwapIndexToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
+	if Stack.HasDuplicate(itemToRemember)	;If this type of item currently occupies two or more slots in the stack.
+		int[] indices = Stack.FindAllInstancesInStack(itemToRemember)	;Get a list of the stack slots occupied by this item.
+		Stack.SwapToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
 
 		int i = 1
 		While i < indices.Length && indices[i] >= 0	;Add all other slots to the first one.
@@ -595,7 +592,7 @@ Function HandleRememberEach(Form itemToRemember, int quantityToRemember, ObjectR
 	endif
 
 	int i = 0
-	While i < quantityToRemember && i < maxRemembered
+	While i < quantityToRemember && i < Stack.size
 		RememberNewItem(itemToRemember, 1, containerToRemember)
 		i += 1
 	EndWhile
