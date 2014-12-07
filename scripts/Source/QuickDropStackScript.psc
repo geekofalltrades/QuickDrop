@@ -2,7 +2,8 @@ Scriptname QuickDropStackScript extends ReferenceAlias
 {QuickDrop stack script. This reusable data structure stores a stack of Forms, integer quantities, and ObjectReference locations. Also can remember which of the items it contains are duplicates.}
 
 ;Because Papyrus limits us to statically sized arrays, a true stack (of
-;unlimited size) is not possible. A stack of limited size that always
+;unlimited size) is not possible - without a linked list implementation,
+;which Papyrus makes a real bitch. A stack of limited size that always
 ;starts at index 0 would be grossly inefficient, because an array shift
 ;of all items would need to be performed every time something was pushed.
 ;Instead, QuickDrop essentially treats its arrays as if they were circular.
@@ -285,6 +286,24 @@ Function _RemoveDuplicate(Form query)
 	endif
 EndFunction
 
+bool Function HasContainer(int index = -1)
+	{Whether or not container data is stored at the given index.}
+	if index = -1
+		index = top
+	endif
+
+	return locations[index] != None && locations[index].GetBaseObject() != XMarker
+EndFunction
+
+bool Function HasWorldLocation(int index = -1)
+	{Whether or not world location data is stored at the given index.}
+	if index = -1
+		index = top
+	endif
+
+	return locations[index] != None && locations[index].GetBaseObject() == XMarker
+EndFunction
+
 int Function GetNextStackIndex(int index)
 	{Get the next stack index from the passed-in index.}
 	index += 1
@@ -349,7 +368,7 @@ EndFunction
 
 Function Align()
 	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property.}
-	if depth == 0		;If the stack is empty.
+	if !depth		;If the stack is empty.
 		top = items.Length - 1	;Reset top so the next item remembered is at 0.
 
 	else	;If we have at least one item remembered.
