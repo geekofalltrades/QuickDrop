@@ -144,10 +144,6 @@ Function ForgetItems(Form akBaseItem, int aiItemCount, ObjectReference akItemRef
 	{Don't attempt to forget additional items while not Ready.}
 EndFunction
 
-Function AdjustMaxRemembered(int newMaxRemembered)
-	{Don't adjust maxRemembered while not Ready.}
-EndFunction
-
 Function AdjustPickUpBehavior(int newPickUpBehavior)
 	{Don't adjust pickUpBehavior while not Ready.}
 EndFunction
@@ -266,13 +262,6 @@ Auto State Ready
 			EndWhile
 		endif
 
-		GoToState("Ready")
-	EndFunction
-
-	Function AdjustMaxRemembered(int newMaxRemembered)
-		{Set a new stack size.}
-		GoToState("Working")
-		Stack.SetSize(newMaxRemembered)
 		GoToState("Ready")
 	EndFunction
 

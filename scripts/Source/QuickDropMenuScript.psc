@@ -4,6 +4,9 @@ Scriptname QuickDropMenuScript extends SKI_ConfigBase
 QuickDropQuestScript Property QuickDropQuest Auto
 {The main quest script.}
 
+QuickDropStackScript Property Stack Auto
+{The stack script.}
+
 QuickDropPlayerRememberScript Property RememberScript Auto
 {The player script responsible for OnItemAdded.}
 
@@ -268,21 +271,19 @@ EndState
 
 State MaxRemembered
 	Event OnSliderOpenST()
-		SetSliderDialogStartValue(QuickDropQuest.maxRemembered)
+		SetSliderDialogStartValue(Stack.size)
 		SetSliderDialogDefaultValue(5.0)
 		SetSliderDialogRange(1.0, 10.0)
 		SetSliderDialogInterval(1.0)
 	EndEvent
 
 	Event OnSliderAcceptST(float value)
-		QuickDropQuest.AdjustMaxRemembered(value as int)
-		ForcePageReset()
+		Stack.SetSize(value as int)
 		SetSliderOptionValueST(value, "{0}")
 	EndEvent
 
 	Event OnDefaultST()
-		QuickDropQuest.AdjustMaxRemembered(5)
-		ForcePageReset()
+		Stack.SetSize(5)
 		SetSliderOptionValueSt(5.0, "{0}")
 	EndEvent
 
