@@ -90,6 +90,10 @@ Function SetSize(int newSize)
 	{Don't adjust the size of the stack while not Ready.}
 EndFunction
 
+Function Swap(int indexOne, int indexTwo)
+	{Don't swap indices while not Ready.}
+EndFunction
+
 Function RecordDuplicates()
 	{Don't record duplicate items while not Ready.}
 EndFunction
@@ -137,6 +141,13 @@ Auto State Ready
 		{Set a new size and align the stack.}
 		GoToState("Working")
 		_SetSize(newSize)
+		GoToState("Ready")
+	EndFunction
+
+	Function Swap(int indexOne, int indexTwo)
+		{Swap the item(s) at the given indices. Does not check whether the indices given are within stack bounds.}
+		GoToState("Working")
+		_Swap(indexOne, indexTwo)
 		GoToState("Ready")
 	EndFunction
 
