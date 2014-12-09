@@ -184,15 +184,26 @@ Auto State Ready
 
 	Function RememberItems(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 		GoToState("Working")
+
 		if rememberPersistent || akItemReference == None
+			;Determine what location data, if any, we will remember.
+			ObjectReference locationToRemember = None
+			if akSourceContainer != None && (rememberContainer || replaceInContainer)	;If we have a container and are remembering containers.
+				locationToRemember = akSourceContainer
+
+			elseif akSourceContainer == None && (rememberWorldLocation || replaceInWorld)	;If we don't have a container and are remembering world locations.
+				locationToRemember = locationXMarker
+				locationXMarker = None	;Clear our reference to locationXMarker, so that a new XMarker is created on next CrosshairRefChange.
+			endif
+
 			if pickUpBehavior == 0		;Remember the item and how many we picked up as a stack.
-				HandleRememberAll(akBaseItem, aiItemCount, akSourceContainer)
+				HandleRememberAll(akBaseItem, aiItemCount, locationToRemember)
 			elseif pickUpBehavior == 1	;Remember as a stack and combine with any other stacks of this item on top of the remembered items stack.
-				HandleCollapseAll(akBaseItem, aiItemCount, akSourceContainer)
+				HandleCollapseAll(akBaseItem, aiItemCount, locationToRemember)
 			elseif pickUpBehavior == 2	;Remember as many individual instances of the item as we can.
-				HandleRememberEach(akBaseItem, aiItemCount, akSourceContainer)
+				HandleRememberEach(akBaseItem, aiItemCount, locationToRemember)
 			elseif pickUpBehavior == 3	;Remember only some instances of the item.
-				HandleRememberSome(akBaseItem, aiItemCount, akSourceContainer)
+				HandleRememberSome(akBaseItem, aiItemCount, locationToRemember)
 			endif
 
 			if notifyOnPersistent && akItemReference != None
@@ -525,36 +536,36 @@ Function HandleKeepAllHotkey()
 	endif
 EndFunction
 
-Function HandleRememberAll(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+Function HandleRememberAll(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
 	{Remember the stack of items picked up to one stack slot, or in multiple stacks according to the modifier.}
 	int i = 0
 
 	if pickUpBehaviorModifier[0]
 		While quantityToRemember > pickUpBehaviorModifier[0] && i < Stack.size
-			RememberNewItem(itemToRemember, pickUpBehaviorModifier[0], containerToRemember)
+			Stack.Push(itemToRemember, pickUpBehaviorModifier[0], locationToRemember)
 			quantityToRemember -= pickUpBehaviorModifier[0]
 			i += 1
 		EndWhile
 	endif
 
 	if quantityToRemember && i < Stack.size
-		RememberNewItem(itemToRemember, quantityToRemember, containerToRemember)
+		Stack.Push(itemToRemember, quantityToRemember, locationToRemember)
 	endif
 EndFunction
 
-Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
 	{Remember the stack of items picked up in a combined stack slot of this type, up to the amount allowed by the modifier.}
 	int existingItemIndex
 
 	if Stack.HasDuplicate(itemToRemember)	;If this type of item currently occupies two or more slots in the stack.
-		int[] indices = Stack.FindAllInstancesInStack(itemToRemember)	;Get a list of the stack slots occupied by this item.
-		Stack.SwapToTop(indices[0])	;Swap the first instance of this item to the top of the stack.
+		int i = Stack.Find(itemToRemember)
+		Stack.MoveToTop(i)	;Move the first instance of this item to the top of the stack.
 
-		int i = 1
-		While i < indices.Length && indices[i] >= 0	;Add all other slots to the first one.
-			Stack.quantities[Stack.top] = Stack.quantities[Stack.top] + quantities[indices[i]]
-			RemoveIndexFromStack(indices[i])
-			i += 1
+		i = Stack.Find(itemToRemember, Stack.GetPreviousStackIndex(i))
+		While i >= 0 && i != Stack.top
+			Stack.quantities[Stack.top] = Stack.quantities[Stack.top] + Stack.quantities[i]
+			Stack.Remove(i)
+			i = Stack.Find(itemToRemember, Stack.GetPreviousStackIndex(i))
 		EndWhile
 
 		Stack.locations[Stack.top] = None	;Clear any replacement data, as it's no longer valid.
@@ -563,8 +574,9 @@ Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectRe
 			Stack.quantities[Stack.top] = pickUpBehaviorModifier[1]
 		endif
 
-		QuickDropDuplicateItems.RemoveAddedForm(itemToRemember)	;Remove this item from the list of duplicates.
+		Stack.RemoveDuplicate(itemToRemember)	;Remove this item from the list of duplicates.
 		existingItemIndex = currentIndex	;Record that this item is now on the top of the stack.
+
 	else	;If this item occupies one or no slots in the stack.
 		existingItemIndex = items.Find(itemToRemember)	;Search for this item in the stack.
 	endif
@@ -572,12 +584,13 @@ Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectRe
 	if existingItemIndex < 0	;If we don't already have this item in the stack.
 		;Remember replacement data until we combine stack slots, as it will be valid until then.
 		if !pickUpBehaviorModifier[1] || quantityToRemember <= pickUpBehaviorModifier[1]
-			RememberNewItem(itemToRemember, quantityToRemember, containerToRemember)
+			Stack.Push(itemToRemember, quantityToRemember, locationToRemember)
 		else
-			RememberNewItem(itemToRemember, pickUpBehaviorModifier[1], containerToRemember)
+			Stack.Push(itemToRemember, pickUpBehaviorModifier[1], locationToRemember)
 		endif
+
 	else						;If we do have this item in the stack somewhere.
-		SwapIndexToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
+		Stack.MoveToTop(existingItemIndex)			;Move it to the top and add the number we just picked up.
 		if !pickUpBehaviorModifier[1] || Stack.quantities[Stack.top] + quantityToRemember <= pickUpBehaviorModifier[1]
 			Stack.quantities[Stack.top] = Stack.quantities[Stack.top] + quantityToRemember
 		else
@@ -587,7 +600,7 @@ Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectRe
 	endif
 EndFunction
 
-Function HandleRememberEach(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
+Function HandleRememberEach(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
 	{Remember the items individually, up to the amount allowed by the modifier.}
 	if pickUpBehaviorModifier[2] && pickUpBehaviorModifier[2] < quantityToRemember
 		quantityToRemember = pickUpBehaviorModifier[2]
@@ -595,58 +608,32 @@ Function HandleRememberEach(Form itemToRemember, int quantityToRemember, ObjectR
 
 	int i = 0
 	While i < quantityToRemember && i < Stack.size
-		RememberNewItem(itemToRemember, 1, containerToRemember)
+		Stack.Push(itemToRemember, 1, locationToRemember)
 		i += 1
 	EndWhile
 EndFunction
 
-Function HandleRememberSome(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
-	{Remember in one stack some of these items, as allowed by the modifier.}
-	RememberNewItem(itemToRemember, pickUpBehaviorModifier[3], containerToRemember)
-EndFunction
-
-Function RememberNewItem(Form itemToRemember, int quantityToRemember, ObjectReference containerToRemember)
-	{Push a new item onto the stack.}
-	Stack.Push(itemToRemember, quantityToRemember, GetLocationRef(containerToRemember))
-EndFunction
-
-ObjectReference Function GetLocationRef(ObjectReference containerRef)
-	{Return the appropriate world location or container reference to remember, if either.}
-	if containerRef != None && (rememberContainer || replaceInContainer)	;If we have a container and are remembering containers.
-		return containerRef
-
-	elseif containerRef == None && (rememberWorldLocation || replaceInWorld)	;If we don't have a container and are remembering world locations.
-		ObjectReference toReturn = locationXMarker
-		locationXMarker = None	;Clear our reference to locationXMarker, so that a new XMarker is created on next CrosshairRefChange.
-		return toReturn
-
+Function HandleRememberSome(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+	{Remember in one stack slot some of these items, as allowed by the modifier.}
+	if quantityToRemember > pickUpBehaviorModifier[3]
+		Stack.Push(itemToRemember, pickUpBehaviorModifier[3], locationToRemember)
+	else
+		Stack.Push(itemToRemember, quantityToRemember, locationToRemember)
 	endif
-
-	return None	;Otherwise, don't remember any location data.
 EndFunction
 
-bool Function CanReplaceInContainer(int index = -1)
-	{Determines whether the item at index can currently be replaced in its container.}
-	if index < 0
-		index = currentIndex
-	endif
-
-	if locations[index] != None && locations[index].GetBaseObject() != XMarker && (!replaceInContainerDistance || PlayerRef.GetDistance(locations[index]) <= replaceInContainerDistance)
+bool Function CanReplaceInContainer()
+	{Determines whether the top stack item can currently be replaced in its container.}
+	if Stack.HasContainer() && (!replaceInContainerDistance || PlayerRef.GetDistance(Stack.locations[Stack.top]) <= replaceInContainerDistance)
 		return True
 	endif
-
 	return False
 EndFunction
 
-bool Function CanReplaceInWorld(int index = -1)
-	{Determines whether the item at index can currently be replaced in its original world location.}
-	if index < 0
-		index = currentIndex
-	endif
-
-	if locations[index] != None && locations[index].GetBaseObject() == XMarker && (!replaceInWorldDistance || PlayerRef.GetDistance(locations[index]) <= replaceInWorldDistance)
+bool Function CanReplaceInWorld()
+	{Determines whether the top stack item can currently be replaced in its original world location.}
+	if Stack.HasWorldLocation() && (!replaceInWorldDistance || PlayerRef.GetDistance(Stack.locations[Stack.top]) <= replaceInWorldDistance)
 		return True
 	endif
-
 	return False
 EndFunction
