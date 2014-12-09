@@ -94,6 +94,10 @@ Function Swap(int indexOne, int indexTwo)
 	{Don't swap indices while not Ready.}
 EndFunction
 
+Function MoveToTop(int index)
+	{Don't move to the top while not Ready.}
+EndFunction
+
 Function RecordDuplicates()
 	{Don't record duplicate items while not Ready.}
 EndFunction
@@ -148,6 +152,13 @@ Auto State Ready
 		{Swap the item(s) at the given indices. Does not check whether the indices given are within stack bounds.}
 		GoToState("Working")
 		_Swap(indexOne, indexTwo)
+		GoToState("Ready")
+	EndFunction
+
+	Function MoveToTop(int index)
+		{Remove the item at the given index, pushing others down into its place, then place it on the top of the stack.}
+		GoToState("Working")
+		_MoveToTop(index)
 		GoToState("Ready")
 	EndFunction
 
@@ -208,11 +219,11 @@ Function _Pop()
 	depth -= 1
 EndFunction
 
-Function _Remove(int index)
+Function _Remove(int index, bool del = True)
 	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
 
-	;If we have world location data stored at the index being removed.
-	if locations[index] != None && locations[index].GetBaseObject() == XMarker
+	;If we have world location data stored at the index being removed and we want to delete it.
+	if del && locations[index] != None && locations[index].GetBaseObject() == XMarker
 		locations[index].Delete()	;Mark the XMarker for deletion.
 	endif
 
@@ -254,6 +265,16 @@ Function _Swap(int indexOne, int indexTwo)
 	ObjectReference tempLocation = locations[indexOne]
 	locations[indexOne] = locations[indexTwo]
 	locations[indexTwo] = tempLocation
+EndFunction
+
+Function _MoveToTop(int index)
+	{Remove the item at the given index, pushing others down into its place, then place it on the top of the stack.}
+	Form tempItem = items[index]
+	int tempQuantity = quantities[index]
+	ObjectReference tempLocation = locations[index]
+
+	Stack._Remove(index, False)
+	Stack._Push(tempItem, tempQuantity, tempLocation)
 EndFunction
 
 Function _RecordDuplicates()
