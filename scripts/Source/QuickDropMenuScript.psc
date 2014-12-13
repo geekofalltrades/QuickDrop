@@ -68,17 +68,17 @@ Function DrawStackPage()
 	SetCursorPosition(1)
 	AddHeaderOption("Current Remembered Items")
 	int iterations = 0
-	i = QuickDropQuest.currentIndex
-	While QuickDropQuest.RememberedItems[i] != None && iterations < QuickDropQuest.maxRemembered
+	i = Stack.top
+	While iterations < Stack.depth
 		;Note that ids are stored AT THEIR CORRESPONDING STACK INDEX, not starting from index 0 - this lets us use Find() to synchronize the option with its stack slot.
-		stackToggleIDs[i] = AddToggleOption(QuickDropQuest.RememberedItems[i].GetName() + " (" + QuickDropQuest.RememberedQuantities[i] + ")", selected[i])
-		i = QuickDropQuest.GetPreviousStackIndex(i)
+		stackToggleIDs[i] = AddToggleOption(Stack.items[i].GetName() + " (" + Stack.quantities[i] + ")", selected[i])
+		i = Stack.GetPreviousStackIndex(i)
 		iterations += 1
 	EndWhile
 EndFunction
 
 Function DrawGeneralSettingsPage()
-	{Draw the "Advanced" settings page.}
+	{Draw the "General Settings" settings page.}
 	AddHeaderOption("Hotkeys")
 	AddKeymapOptionST("ToggleRememberingHotkey", "Toggle Remembering", QuickDropQuest.toggleRememberingHotkey)
 	AddKeymapOptionST("ShowHotkey", "Show Current Item", QuickDropQuest.showHotkey)
@@ -88,7 +88,7 @@ Function DrawGeneralSettingsPage()
 	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
 	SetCursorPosition(1)
 	AddHeaderOption("Settings")
-	AddSliderOptionST("MaxRemembered", "Items Remembered", QuickDropQuest.maxRemembered, "{0}")
+	AddSliderOptionST("MaxRemembered", "Items Remembered", Stack.size, "{0}")
 	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
 	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingStateToString())
 EndFunction
@@ -153,10 +153,10 @@ State StackClearLocation
 		QuickDropQuest.GoToState("Working")
 		int i = selected.Find(True)
 		While i >= 0
-			if QuickDropQuest.RememberedLocations[i] != None && QuickDropQuest.RememberedLocations[i].GetBaseObject() == QuickDropQuest.XMarker
-				QuickDropQuest.RememberedLocations[i].Delete()
+			if Stack.HasWorldLocation(i)
+				Stack.locations[i].Delete()
 			endif
-			QuickDropQuest.RememberedLocations[i] = None
+			Stack.locations[i] = None
 			i = selected.Find(True, i + 1)
 		EndWhile
 		QuickDropQuest.GoToState("Ready")
@@ -174,7 +174,7 @@ int[] Function GetSelectedIndices()
 	int[] selectedIndices = new int[10]
 
 	;Start from the current index and move down the stack to the bottom of the array.
-	int i = selected.Rfind(True, QuickDropQuest.currentIndex)
+	int i = selected.Rfind(True, Stack.top)
 	While i >= 0
 		selectedIndices[numSelected] = i
 		numSelected += 1
@@ -183,7 +183,7 @@ int[] Function GetSelectedIndices()
 
 	;Wrap around to the top of the array and search back down the stack to the current index.
 	i = selected.Rfind(True)
-	While i > QuickDropQuest.currentIndex
+	While i > Stack.top
 		selectedIndices[numSelected] = i
 		numSelected += 1
 		i = selected.Rfind(True, i - 1)
@@ -202,9 +202,9 @@ State StackDropSelected
 		int[] toDrop = GetSelectedIndices()
 		QuickDropQuest.GoToState("Working")
 		if toDrop.Find(-1) == 1	;If we have only one selected index.
-			QuickDropQuest.HandleDropHotkey(toDrop[0])
+			QuickDropQuest.DropSingleItem(toDrop[0])
 		else	;If we have more than one selected index.
-			QuickDropQuest.HandleDropAllHotkey(toDrop)
+			QuickDropQuest.DropMultipleItems(toDrop)
 		endif
 		QuickDropQuest.GoToState("Ready")
 		ForcePageReset()
@@ -220,9 +220,9 @@ State StackKeepSelected
 		int[] toKeep = GetSelectedIndices()
 		QuickDropQuest.GoToState("Working")
 		if toKeep.Find(-1) == 1	;If we have only one selected index.
-			QuickDropQuest.HandleKeepHotkey(toKeep[0])
+			QuickDropQuest.KeepSingleItem(toKeep[0])
 		else	;If we have more than one selected index.
-			QuickDropQuest.HandleKeepAllHotkey(toKeep)
+			QuickDropQuest.KeepMultipleItems(toKeep)
 		endif
 		QuickDropQuest.GoToState("Ready")
 		ForcePageReset()
@@ -233,8 +233,8 @@ State StackKeepSelected
 	EndEvent
 EndState
 
-Function SwapIndices(int indexOne, int indexTwo)
-	{Swap the given indices. Wrapper around QuickDropQuest.SwapIndices that additionally handles swapping menu data.}
+Function Swap(int indexOne, int indexTwo)
+	{Swap the given indices. Wrapper around Stack.Swap that additionally handles swapping menu data.}
 	bool tempSelected = selected[indexOne]
 	selected[indexOne] = selected[indexTwo]
 	selected[indexTwo] = tempSelected
@@ -243,15 +243,13 @@ Function SwapIndices(int indexOne, int indexTwo)
 	stackToggleIDs[indexOne] = stackToggleIDs[indexTwo]
 	stackToggleIDs[indexTwo] = tempStackToggleID
 
-	QuickDropQuest.GoToState("Working")
-	QuickDropQuest.SwapIndices(indexOne, indexTwo)
-	QuickDropQuest.GoToState("Ready")
+	Stack.Swap(indexOne, indexTwo)
 EndFunction
 
 State StackMoveUp
 	Event OnSelectST()
 		int swapUp = selected.Find(True)
-		SwapIndices(swapUp, QuickDropQuest.GetNextStackIndex(swapUp))
+		Swap(swapUp, Stack.GetNextStackIndex(swapUp))
 		ForcePageReset()
 	EndEvent
 
@@ -263,7 +261,7 @@ EndState
 State StackMoveDown
 	Event OnSelectST()
 		int swapDown = selected.Find(True)
-		SwapIndices(swapDown, QuickDropQuest.GetPreviousStackIndex(swapDown))
+		Swap(swapDown, Stack.GetPreviousStackIndex(swapDown))
 		ForcePageReset()
 	EndEvent
 
@@ -275,7 +273,7 @@ EndState
 State StackSwapSelected
 	Event OnSelectST()
 		int swapOne = selected.Find(True)
-		SwapIndices(swapOne, selected.Find(True, swapOne + 1))
+		Swap(swapOne, selected.Find(True, swapOne + 1))
 		ForcePageReset()
 	EndEvent
 
@@ -291,13 +289,13 @@ State StackCombineUp
 		int i = 1
 
 		While indices[i] >= 0 && i < indices.Length
-			QuickDropQuest.RememberedQuantities[combineTo] += QuickDropQuest.RememberedQuantities[indices[i]]
-			RemoveIndexFromStack(indices[i])
-			combineTo = QuickDropQuest.GetPreviousStackIndex(combineTo)	;We just pulled a slot out from the middle of the stack, so adjust our top-most index down.
+			Stack.quantities[combineTo] = Stack.quantities[combineTo] + Stack.quantities[indices[i]]
+			Stack.Remove(indices[i])
+			combineTo = Stack.GetPreviousStackIndex(combineTo)	;We just pulled a slot out from the middle of the stack, so adjust our top-most index down.
 			i += 1
 		EndWhile
 
-		QuickDropQuest.RememberedLocations[combineTo] = None
+		Stack.locations[combineTo] = None
 	EndEvent
 
 	Event OnHighlightST()
@@ -320,12 +318,12 @@ State StackCombineDown
 
 		i = 0
 		While indices[i] != combineTo
-			QuickDropQuest.RememberedQuantities[combineTo] += QuickDropQuest.RememberedQuantities[indices[i]]
-			RemoveIndexFromStack(indices[i])
+			Stack.quantities[combineTo] = Stack.quantities[combineTo] + Stack.quantities[indices[i]]
+			Stack.Remove(indices[i])
 			i += 1
 		EndWhile
 
-		QuickDropQuest.RememberedLocations[combineTo] = None
+		Stack.locations[combineTo] = None
 	EndEvent
 
 	Event OnHighlightST()
@@ -335,11 +333,11 @@ EndState
 
 State StackInvertSelection
 	Event OnSelectST()
-		int i = QuickDropQuest.currentIndex
+		int i = Stack.top
 		int iterations = 0
-		While QuickDropQuest.RememberedItems[i] != None && iterations < QuickDropQuest.maxRemembered
+		While iterations < Stack.depth
 			selected[i] = !selected[i]
-			i = QuickDropQuest.GetPreviousStackIndex(i)
+			i = Stack.GetPreviousStackIndex(i)
 			iterations += 1
 		EndWhile
 		UpdateStackOptions()
@@ -352,11 +350,11 @@ EndState
 
 State StackSelectAll
 	Event OnSelectST()
-		int i = QuickDropQuest.currentIndex
+		int i = Stack.top
 		int iterations = 0
-		While QuickDropQuest.RememberedItems[i] != None && iterations < QuickDropQuest.maxRemembered
+		While iterations < Stack.depth
 			selected[i] = True
-			i = QuickDropQuest.GetPreviousStackIndex(i)
+			i = Stack.GetPreviousStackIndex(i)
 			iterations += 1
 		EndWhile
 		UpdateStackOptions()
@@ -369,11 +367,11 @@ EndState
 
 State StackSelectNone
 	Event OnSelectST()
-		int i = QuickDropQuest.currentIndex
+		int i = Stack.top
 		int iterations = 0
-		While QuickDropQuest.RememberedItems[i] != None && iterations < QuickDropQuest.maxRemembered
+		While iterations < Stack.depth
 			selected[i] = False
-			i = QuickDropQuest.GetPreviousStackIndex(i)
+			i = Stack.GetPreviousStackIndex(i)
 			iterations += 1
 		EndWhile
 		UpdateStackOptions()
@@ -385,14 +383,12 @@ State StackSelectNone
 EndState
 
 Function SetStackSelectionOptions(int flag, bool noUpdate = False)
-	{Set the flag on the stack selection options. We want them off while we're working so our state is frozen.}
+	{Set the given flag on the stack selection options. We want them off while we're working so our state is frozen.}
 	int i = 0
-	While i < stackToggleIDs.Length
-		if stackToggleIDs[i] >= 0
-			SetOptionFlags(stackToggleIDs[i], flag, True)
-			if flag == OPTION_FLAG_NONE	;If we're enabling this option.
-				SetToggleOptionValue(stackToggleIDs[i], selected[i], True)	;Also refresh the option's value, so that this function refreshes the page.
-			endif
+	While i < stackToggleIDs.Length && stackToggleIDs[i] >= 0
+		SetOptionFlags(stackToggleIDs[i], flag, True)
+		if flag == OPTION_FLAG_NONE	;If we're enabling this option.
+			SetToggleOptionValue(stackToggleIDs[i], selected[i], True)	;Also refresh the option's value, so that this function refreshes the page.
 		endif
 		i += 1
 	EndWhile
@@ -433,7 +429,7 @@ Function UpdateStackOptions()
 
 		i = selected.Find(True)
 		While i >= 0 && !clearLocation
-			if QuickDropQuest.RememberedLocations[i] != None
+			if Stack.locations[i] != None
 				clearLocation = True
 			endif
 			i = selected.Find(True, i + 1)
@@ -446,12 +442,12 @@ Function UpdateStackOptions()
 
 	if numSelected == 1
 		i = selected.Find(True)
-		if i != QuickDropQuest.currentIndex
+		if i != Stack.top
 			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveUp")
 		endif
 
-		i = QuickDropQuest.GetPreviousStackIndex(i)
-		if i != QuickDropQuest.currentIndex && QuickDropQuest.RememberedItems[i] != None
+		i = Stack.GetPreviousStackIndex(i)
+		if i != Stack.top && Stack.items[i] != None
 			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveDown")
 		endif
 	endif
@@ -462,13 +458,12 @@ Function UpdateStackOptions()
 
 	if numSelected > 1
 		i = selected.Find(True)
-		Form selectedItem = QuickDropQuest.RememberedItems[i]
+		Form selectedItem = Stack.items[i]
 		bool same = True
 
-		;Do-While structure.
 		i = selected.Find(True, i + 1)
 		While i >= 0 && same
-			if QuickDropQuest.RememberedItems[i] != selectedItem
+			if Stack.items[i] != selectedItem
 				same = False
 			endif
 			i = selected.Find(True, i + 1)
@@ -497,18 +492,23 @@ Event OnOptionHighlight(int option)
 	{Old-style highlight for handling highlighting of rows in the stack menu.}
 	int index = stackToggleIDs.Find(option)
 	if index >= 0
-		string msg = QuickDropQuest.RememberedItems[index].GetName() + ".\n"
+		string msg = Stack.items[index].GetName() + ".\n"
 
-		if QuickDropQuest.RememberedQuantities[index] == 1
+		if Stack.quantities[index] == 1
 			msg += "Single item.\n"
 		else
-			msg += "Stack of " + QuickDropQuest.RememberedQuantities[index] + " items.\n"
+			msg += "Stack of " + Stack.quantities[index] + " items.\n"
 		endif
 
-		if QuickDropQuest.RememberedLocations[index] == None
-			msg += "No location remembered."
+		if Stack.HasContainer(index)
+			msg += "From container."
+			if QuickDropQuest.CanReplaceInContainer(index)
+				msg += " Can be replaced."
+			else
+				msg += " Too far away to replace."
+			endif
 
-		elseif QuickDropQuest.RememberedLocations[index].GetBaseObject() == QuickDropQuest.XMarker
+		elseif Stack.HasWorldLocation(index)
 			msg += "From world."
 			if QuickDropQuest.CanReplaceInWorld(index)
 				msg += " Can be replaced."
@@ -517,12 +517,7 @@ Event OnOptionHighlight(int option)
 			endif
 
 		else
-			msg += "From container."
-			if QuickDropQuest.CanReplaceInContainer(index)
-				msg += " Can be replaced."
-			else
-				msg += " Too far away to replace."
-			endif
+			msg += "No location remembered."
 		endif
 
 		SetInfoText(msg)

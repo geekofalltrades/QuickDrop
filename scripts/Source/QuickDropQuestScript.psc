@@ -409,18 +409,61 @@ EndFunction
 Function KeepAllItems()
 	{Keep all remembered items and display appropriate notifications.}
 	if Stack.depth
-		if notifyOnKeep
-			QuickDropAllItemsKept.Show()
-		endif
-
 		While Stack.depth
 			Stack.Pop()
 		EndWhile
+
+		if notifyOnKeep
+			QuickDropAllItemsKept.Show()
+		endif
 
 		Stack.Align()
 
 	else
 		QuickDropNoItemsRemembered.Show()
+	endif
+EndFunction
+
+Function DropMultipleItems(int[] indices)
+	{Attempt to drop/replace the items at the passed-in indices and display appropriate notifications. Indices is a list of occupied stack indices in top-down order, terminated with -1 if not full. Operates as if we're attempting a drop/replace on each individual item.}
+	bool someFailedToReplace = False
+	int i = 0
+	While i < indices.Length && indices[i] >= 0
+		string summary = HandleDrop(indices[i])
+
+		if StringUtil.GetNthChar(summary, 0) == "1" && StringUtil.GetNthChar(summary, 2) == "0"	;If we tried to replace this item and failed.
+			someFailedToReplace = True
+		endif
+
+		i += 1
+	EndWhile
+
+	if notifyOnDrop || notifyOnReplaceInContainer || notifyOnFailToReplaceInContainer || notifyOnReplaceInWorld || notifyOnFailToReplaceInWorld
+		if someFailedToReplace
+			QuickDropSomeItemsNotDropped.Show()
+		else
+			QuickDropAllItemsDropped.Show()
+		endif
+	endif
+
+	if !Stack.depth	;If we succeeded in clearing the entire stack.
+		Stack.Align()
+	endif
+EndFunction
+
+Function KeepMultipleItems(int[] indices)
+	{Keep the items at the passed-in indices and display appropriate notifications. Indices is a list of occupied stack indices in top-down order, terminated with -1 if not full.}
+	int i = 0
+	While i < indices.Length && indices[i] >= 0
+		Stack.Remove(indices[i])
+	EndWhile
+
+	if notifyOnKeep
+		QuickDropAllItemsKept.Show()
+	endif
+
+	if !Stack.depth	;If we succeeded in clearing the entire stack.
+		Stack.Align()
 	endif
 EndFunction
 
@@ -484,9 +527,17 @@ Function DropItem(int index)
 	ForgetScript.GoToState("Enabled")
 EndFunction
 
+bool Function CanReplaceInContainer(int index)
+	{Determines whether the stack item at the given index can currently be replaced in its container.}
+	if !replaceInContainerDistance || PlayerRef.GetDistance(Stack.locations[Stack.top]) <= replaceInContainerDistance
+		return True
+	endif
+	return False
+EndFunction
+
 bool Function ReplaceItemInContainer(int index)
 	{Attempt to replace the item at index to its original container. Return True on success, False on failure.}
-	if !replaceInContainerDistance || PlayerRef.GetDistance(Stack.locations[index]) <= replaceInContainerDistance
+	if CanReplaceInContainer(index)
 		ForgetScript.GoToState("Disabled")
 		PlayerRef.RemoveItem(Stack.items[index], Stack.quantities[index], True, Stack.locations[index])
 		Stack.Remove(index)
@@ -497,9 +548,17 @@ bool Function ReplaceItemInContainer(int index)
 	return False
 EndFunction
 
+bool Function CanReplaceInWorld(int index)
+	{Determines whether the stack item at the given index can currently be replaced in its original world location.}
+	if !replaceInWorldDistance || PlayerRef.GetDistance(Stack.locations[Stack.top]) <= replaceInWorldDistance
+		return True
+	endif
+	return False
+EndFunction
+
 bool Function ReplaceItemInWorld(int index)
 	{Attempt to replace the item at index to its original world location. Return True on success, False on failure.}
-	if !replaceInWorldDistance || PlayerRef.GetDistance(Stack.locations[index]) <= replaceInWorldDistance
+	if CanReplaceInWorld(index)
 		ForgetScript.GoToState("Disabled")
 		PlayerRef.DropObject(Stack.items[index], Stack.quantities[index]).MoveTo(Stack.locations[index])
 		Stack.Remove(index)
@@ -594,20 +653,4 @@ Function HandleRememberSome(Form itemToRemember, int quantityToRemember, ObjectR
 	else
 		Stack.Push(itemToRemember, quantityToRemember, locationToRemember)
 	endif
-EndFunction
-
-bool Function CanReplaceInContainer()
-	{Determines whether the top stack item can currently be replaced in its container.}
-	if Stack.HasContainer() && (!replaceInContainerDistance || PlayerRef.GetDistance(Stack.locations[Stack.top]) <= replaceInContainerDistance)
-		return True
-	endif
-	return False
-EndFunction
-
-bool Function CanReplaceInWorld()
-	{Determines whether the top stack item can currently be replaced in its original world location.}
-	if Stack.HasWorldLocation() && (!replaceInWorldDistance || PlayerRef.GetDistance(Stack.locations[Stack.top]) <= replaceInWorldDistance)
-		return True
-	endif
-	return False
 EndFunction
