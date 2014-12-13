@@ -529,6 +529,80 @@ Function HandleKeepAllHotkey()
 	endif
 EndFunction
 
+string Function HandleDrop(int index)
+	{Attempt to drop or replace the item at the given index. Return four bits summarizing our attempt.}
+
+	string summary
+	;The summary string returned by this function contains four bits.
+	;The first bit tells whether we tried to replace this item (1 if the item had location data, 0 if not).
+	;The second bit tells whether the location data was a container (1) or world location (0).
+	;The third bit tells whether we succeeded in replacing the item (1 for success, 0 for failure).
+	;The fourth bit tells whether we dropped this item (1 if so, 0 if not).
+	;P.S.: I hate this pattern. But Papyrus's feature set makes this among the more elegant solutions.
+
+	if replaceInContainer && Stack.HasContainer(index)	;We're replacing items in containers and have a container to replace to.
+		summary = "11"
+		if ReplaceItemInContainer(index)
+			summary += "1"
+		else
+			summary += "0"
+			if replaceInContainerDropOnFail
+				summary += "1"
+				DropItem(index)
+			else
+				summary += "0"
+			endif
+
+	elseif replaceInWorld && Stack.HasWorldLocation(index)	;We're replacing items in the world and have a world location to replace to.
+		summary = "10"
+		if ReplaceItemInWorld(index)
+			summary += "1"
+		else
+			summary += "0"
+			if replaceInWorldDropOnFail
+				summary += "1"
+				DropItem(index)
+			else
+				summary += "0"
+			endif
+
+	else	;We're not replacing items or don't have a location to replace this item to.
+		summary = "0001"
+		DropItem(index)
+
+	endif
+
+	return summary
+EndFunction
+
+Function DropItem(int index)
+	{Drop the item at index.}
+	PlayerRef.DropObject(Stack.items[index], Stack.quantities[index])
+	Stack.Remove(index)
+EndFunction
+
+bool Function ReplaceItemInContainer(int index)
+	{Attempt to replace the item at index to its original container. Return True on success, False on failure.}
+	if !replaceInContainerDistance || PlayerRef.GetDistance(Stack.locations[index]) <= replaceInContainerDistance
+		PlayerRef.RemoveItem(Stack.items[index], Stack.quantities[index], True, Stack.locations[index])
+		Stack.Remove(index)
+		return True
+	endif
+
+	return False
+EndFunction
+
+bool Function ReplaceItemInWorld(int index)
+	{Attempt to replace the item at index to its original world location. Return True on success, False on failure.}
+	if !replaceInWorldDistance || PlayerRef.GetDistance(Stack.locations[index]) <= replaceInWorldDistance
+		PlayerRef.DropObject(Stack.items[index], Stack.quantities[index]).MoveTo(Stack.locations[index])
+		Stack.Remove(index)
+		return True
+	endif
+
+	return False
+EndFunction
+
 Function HandleRememberAll(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
 	{Remember the stack of items picked up to one stack slot, or in multiple stacks according to the modifier.}
 	int i = 0
