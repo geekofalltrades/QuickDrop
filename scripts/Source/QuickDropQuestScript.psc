@@ -161,18 +161,18 @@ Auto State Ready
 		{Map key presses to their respective hotkey actions.}
 		if !Utility.IsInMenuMode()	;Try to disable hotkeys when menus are open.
 			GoToState("Working")
-			if KeyCode == dropHotkey
-				HandleDropHotkey()
+			if KeyCode == toggleRememberingHotkey
+				ToggleRemembering()
 			elseif KeyCode == showHotkey
-				HandleShowHotkey()
+				ShowTopItem()
+			elseif KeyCode == dropHotkey
+				DropSingleItem(Stack.top)
 			elseif KeyCode == keepHotkey
-				HandleKeepHotkey()
+				KeepSingleItem(Stack.top)
 			elseif KeyCode == dropAllHotkey
-				HandleDropAllHotkey()
+				DropAllItems()
 			elseif KeyCode == keepAllHotkey
-				HandleKeepAllHotkey()
-			elseif KeyCode == toggleRememberingHotkey
-				HandleToggleRememberingHotkey()
+				KeepAllItems()
 			endif
 			GoToState("Ready")
 		endif
@@ -313,7 +313,7 @@ Auto State Ready
 	EndFunction
 EndState
 
-Function HandleToggleRememberingHotkey()
+Function ToggleRemembering()
 	{Enable the remember script and display the appropriate message.}
 	if RememberScript.GetState() == "Enabled"
 		RememberScript.GoToState("Disabled")
@@ -324,8 +324,8 @@ Function HandleToggleRememberingHotkey()
 	endif
 EndFunction
 
-Function HandleShowHotkey()
-	{Display the current item.}
+Function ShowTopItem()
+	{Display a message showing the top item of the stack.}
 	if Stack.depth
 		Debug.Notification("QuickDrop: Current: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ").")
 	else
@@ -333,172 +333,68 @@ Function HandleShowHotkey()
 	endif
 EndFunction
 
-Function HandleDropHotkey()
-	{Drop the current item and move to the next.}
-	if Stack.depth
-		ForgetScript.GoToState("Disabled")	;Don't receive an OnItemRemoved when this item is dropped.
+Function DropSingleItem(int index)
+	{Drop the item at the given index and display appropriate notifications.}
+	string summary = HandleDrop(index)
 
-		if replaceInContainer && Stack.HasContainer()	;We're replacing items in containers and have a container to replace to.
-			if CanReplaceInContainer()
-				if notifyOnReplaceInContainer
+	if summary == "0000"	;If we had no item remembered at this index.
+		QuickDropNoItemsRemembered.Show()
+	else
+		if GetNthChar(summary, 0) == "1"	;If we tried to replace this item.
+			if GetNthChar(summary, 1) == "1"	;If we tried to replace in a container
+				if notifyOnReplaceInContainer && GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in a container.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") replaced in container.")
-				endif
-
-				PlayerRef.RemoveItem(Stack.items[Stack.top], Stack.quantities[Stack.top], True, Stack.locations[Stack.top])
-				Stack.Pop()
-
-			else
-				if notifyOnFailToReplaceInContainer
+				elseif notifyOnFailToReplaceInContainer && GetNthChar(summary, 2) == "0"	;If we failed to replace in a container.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") could not be replaced in container.")
 				endif
 
-				if replaceInContainerDropOnFail
-					if notifyOnDrop
-						Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") dropped.")
-					endif
-
-					PlayerRef.DropObject(Stack.items[Stack.top], Stack.quantities[Stack.top])
-					Stack.Pop()
-				endif
-			endif
-
-		elseif replaceInWorld && Stack.HasWorldLocation()	;We're replacing items in the world and have an XMarker to replace to.
-			if CanReplaceInWorld()
-				if notifyOnReplaceInWorld
+			else	;If we tried to replace in the world.
+				if notifyOnReplaceInWorld && GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in the world.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") replaced in world.")
-				endif
-
-				PlayerRef.DropObject(Stack.items[Stack.top], Stack.quantities[Stack.top]).MoveTo(Stack.locations[Stack.top])
-				Stack.Pop()
-
-			else
-				if notifyOnFailToReplaceInWorld
+				elseif notifyOnFailToReplaceInWorld && GetNthChar(summary, 2) == "0"	;If we failed to replace in the world.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") could not be replaced in world.")
 				endif
-
-				if replaceInWorldDropOnFail
-					if notifyOnDrop
-						Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") dropped.")
-					endif
-
-					PlayerRef.DropObject(Stack.items[Stack.top], Stack.quantities[Stack.top])
-					Stack.Pop()
-				endif
 			endif
-
-		else	;We're not replacing items or don't have a place to replace this item to.
-			if notifyOnDrop
-				Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") dropped.")
-			endif
-
-			PlayerRef.DropObject(Stack.items[Stack.top], Stack.quantities[Stack.top])
-			Stack.Pop()
-
 		endif
 
-		ForgetScript.GoToState("Enabled")
-
-	else
-		QuickDropNoItemsRemembered.Show()
+		if notifyOnDrop && GetNthChar(summary, 3) == "1"	;If we dropped this item.
+			Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") dropped.")
+		endif
 	endif
 EndFunction
 
-Function HandleKeepHotkey()
-	{Keep the current item and move to the next.}
+Function KeepSingleItem(int index)
+	{Keep the item at the given index and display appropriate notifications.}
 	if Stack.depth
 		if notifyOnKeep
 			Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") kept.")
 		endif
 
-		Stack.Pop()
+		Stack.Remove(index)
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
 EndFunction
 
-Function HandleDropAllHotkey()
-	{Drop/replace all remembered items. Operates as if we're attempting a drop/replace on each individual item.}
-	if stack.depth
-		ForgetScript.GoToState("Disabled")	;Don't receive OnItemRemoved when these items are dropped.
+Function DropAllItems()
+	{Attempt to drop/replace all remembered items. Operates as if we're attempting a drop/replace on each individual item.}
+	bool someFailedToReplace = False
 
-		int notify = 0	;What type of notification to display for this action.
-		int i = Stack.top
-		int iterations = 0
-		int terminate = Stack.depth	;Stop after this many iterations.
+	if Stack.depth
+		While Stack.depth
+			string summary = HandleDrop(Stack.top)
 
-		While iterations < terminate
-			if replaceInContainer && Stack.HasContainer(i) ;We're replacing items in containers and have a container to replace to.
-				if CanReplaceInContainer()
-					if notifyOnReplaceInContainer && notify < 2
-						notify = 1
-					endif
-
-					PlayerRef.RemoveItem(Stack.items[i], Stack.quantities[i], True, Stack.locations[i])
-					Stack.Remove(i)
-
-				else
-					if replaceInContainerDropOnFail
-						if notifyOnDrop && notify < 2
-							notify = 1
-						endif
-
-						PlayerRef.DropObject(Stack.items[i], Stack.quantities[i])
-						Stack.Remove(i)
-
-					elseif notifyOnFailToReplaceInContainer	;Special-case notification: some items couldn't be dropped/replaced.
-						notify = 2
-
-					endif
-				endif
-
-			elseif replaceInWorld && Stack.HasWorldLocation(i)	;We're replacing items in the world and have an XMarker to replace to.
-				if CanReplaceInWorld()
-					if notifyOnReplaceInWorld && notify < 2
-						notify = 1
-					endif
-
-					PlayerRef.DropObject(Stack.items[i], Stack.quantities[i]).MoveTo(Stack.locations[i])
-					Stack.Remove(i)
-
-				else
-					if replaceInWorldDropOnFail
-						if notifyOnDrop && notify < 2
-							notify = 1
-						endif
-
-						PlayerRef.DropObject(Stack.items[i], Stack.quantities[i])
-						Stack.Remove(i)
-
-					elseif notifyOnFailToReplaceInWorld	;Special-case notification: some items couldn't be dropped/replaced.
-						notify = 2
-
-					endif
-				endif
-
-			else	;We're not replacing items or don't have a place to replace this item to.
-				if notifyOnDrop && notify < 2
-					notify = 1
-				endif
-
-				PlayerRef.DropObject(Stack.items[i], Stack.quantities[i])
-				Stack.Remove(i)
-
-			endif
-
-			iterations += 1
-			if indices == None
-				i = GetPreviousStackIndex(i)
-			else
-				i = indices[iterations]
+			if GetNthChar(summary, 0) == "1" && GetNthChar(summary, 2) == "0"	;If we tried to replace this item and failed.
+				someFailedToReplace = True
 			endif
 		EndWhile
 
-		ForgetScript.GoToState("Enabled")
-
-		if notify == 1
-			QuickDropAllItemsDropped.Show()
-		elseif notify == 2
-			QuickDropSomeItemsNotDropped.Show()
+		if notifyOnDrop || notifyOnReplaceInContainer || notifyOnFailToReplaceInContainer || notifyOnReplaceInWorld || notifyOnFailToReplaceInWorld
+			if someFailedToReplace
+				QuickDropSomeItemsNotDropped.Show()
+			else
+				QuickDropAllItemsDropped.Show()
+			endif
 		endif
 
 		if !Stack.depth	;If we succeeded in clearing the entire stack.
@@ -507,12 +403,11 @@ Function HandleDropAllHotkey()
 
 	else
 		QuickDropNoItemsRemembered.Show()
-
 	endif
 EndFunction
 
-Function HandleKeepAllHotkey()
-	{Keep all remembered items.}
+Function KeepAllItems()
+	{Keep all remembered items and display appropriate notifications.}
 	if Stack.depth
 		if notifyOnKeep
 			QuickDropAllItemsKept.Show()
@@ -540,36 +435,40 @@ string Function HandleDrop(int index)
 	;The fourth bit tells whether we dropped this item (1 if so, 0 if not).
 	;P.S.: I hate this pattern. But Papyrus's feature set makes this among the more elegant solutions.
 
-	if replaceInContainer && Stack.HasContainer(index)	;We're replacing items in containers and have a container to replace to.
-		summary = "11"
-		if ReplaceItemInContainer(index)
-			summary += "1"
-		else
-			summary += "0"
-			if replaceInContainerDropOnFail
+	if Stack.items[index] != None	;If there's actually an item at this index.
+		if replaceInContainer && Stack.HasContainer(index)	;We're replacing items in containers and have a container to replace to.
+			summary = "11"
+			if ReplaceItemInContainer(index)
 				summary += "1"
-				DropItem(index)
 			else
 				summary += "0"
-			endif
+				if replaceInContainerDropOnFail
+					summary += "1"
+					DropItem(index)
+				else
+					summary += "0"
+				endif
 
-	elseif replaceInWorld && Stack.HasWorldLocation(index)	;We're replacing items in the world and have a world location to replace to.
-		summary = "10"
-		if ReplaceItemInWorld(index)
-			summary += "1"
-		else
-			summary += "0"
-			if replaceInWorldDropOnFail
+		elseif replaceInWorld && Stack.HasWorldLocation(index)	;We're replacing items in the world and have a world location to replace to.
+			summary = "10"
+			if ReplaceItemInWorld(index)
 				summary += "1"
-				DropItem(index)
 			else
 				summary += "0"
-			endif
+				if replaceInWorldDropOnFail
+					summary += "1"
+					DropItem(index)
+				else
+					summary += "0"
+				endif
 
-	else	;We're not replacing items or don't have a location to replace this item to.
-		summary = "0001"
-		DropItem(index)
+		else	;We're not replacing items or don't have a location to replace this item to.
+			summary = "0001"
+			DropItem(index)
 
+		endif
+	else	;If there was no item at this index.
+		summary = "0000"
 	endif
 
 	return summary
@@ -577,15 +476,19 @@ EndFunction
 
 Function DropItem(int index)
 	{Drop the item at index.}
+	ForgetScript.GoToState("Disabled")
 	PlayerRef.DropObject(Stack.items[index], Stack.quantities[index])
 	Stack.Remove(index)
+	ForgetScript.GoToState("Enabled")
 EndFunction
 
 bool Function ReplaceItemInContainer(int index)
 	{Attempt to replace the item at index to its original container. Return True on success, False on failure.}
 	if !replaceInContainerDistance || PlayerRef.GetDistance(Stack.locations[index]) <= replaceInContainerDistance
+		ForgetScript.GoToState("Disabled")
 		PlayerRef.RemoveItem(Stack.items[index], Stack.quantities[index], True, Stack.locations[index])
 		Stack.Remove(index)
+		ForgetScript.GoToState("Enabled")
 		return True
 	endif
 
@@ -595,8 +498,10 @@ EndFunction
 bool Function ReplaceItemInWorld(int index)
 	{Attempt to replace the item at index to its original world location. Return True on success, False on failure.}
 	if !replaceInWorldDistance || PlayerRef.GetDistance(Stack.locations[index]) <= replaceInWorldDistance
+		ForgetScript.GoToState("Disabled")
 		PlayerRef.DropObject(Stack.items[index], Stack.quantities[index]).MoveTo(Stack.locations[index])
 		Stack.Remove(index)
+		ForgetScript.GoToState("Enabled")
 		return True
 	endif
 
