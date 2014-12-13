@@ -340,24 +340,24 @@ Function DropSingleItem(int index)
 	if summary == "0000"	;If we had no item remembered at this index.
 		QuickDropNoItemsRemembered.Show()
 	else
-		if GetNthChar(summary, 0) == "1"	;If we tried to replace this item.
-			if GetNthChar(summary, 1) == "1"	;If we tried to replace in a container
-				if notifyOnReplaceInContainer && GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in a container.
+		if StringUtil.GetNthChar(summary, 0) == "1"	;If we tried to replace this item.
+			if StringUtil.GetNthChar(summary, 1) == "1"	;If we tried to replace in a container
+				if notifyOnReplaceInContainer && StringUtil.GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in a container.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") replaced in container.")
-				elseif notifyOnFailToReplaceInContainer && GetNthChar(summary, 2) == "0"	;If we failed to replace in a container.
+				elseif notifyOnFailToReplaceInContainer && StringUtil.GetNthChar(summary, 2) == "0"	;If we failed to replace in a container.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") could not be replaced in container.")
 				endif
 
 			else	;If we tried to replace in the world.
-				if notifyOnReplaceInWorld && GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in the world.
+				if notifyOnReplaceInWorld && StringUtil.GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in the world.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") replaced in world.")
-				elseif notifyOnFailToReplaceInWorld && GetNthChar(summary, 2) == "0"	;If we failed to replace in the world.
+				elseif notifyOnFailToReplaceInWorld && StringUtil.GetNthChar(summary, 2) == "0"	;If we failed to replace in the world.
 					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") could not be replaced in world.")
 				endif
 			endif
 		endif
 
-		if notifyOnDrop && GetNthChar(summary, 3) == "1"	;If we dropped this item.
+		if notifyOnDrop && StringUtil.GetNthChar(summary, 3) == "1"	;If we dropped this item.
 			Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") dropped.")
 		endif
 	endif
@@ -384,7 +384,7 @@ Function DropAllItems()
 		While Stack.depth
 			string summary = HandleDrop(Stack.top)
 
-			if GetNthChar(summary, 0) == "1" && GetNthChar(summary, 2) == "0"	;If we tried to replace this item and failed.
+			if StringUtil.GetNthChar(summary, 0) == "1" && StringUtil.GetNthChar(summary, 2) == "0"	;If we tried to replace this item and failed.
 				someFailedToReplace = True
 			endif
 		EndWhile
@@ -448,6 +448,7 @@ string Function HandleDrop(int index)
 				else
 					summary += "0"
 				endif
+			endif
 
 		elseif replaceInWorld && Stack.HasWorldLocation(index)	;We're replacing items in the world and have a world location to replace to.
 			summary = "10"
@@ -461,6 +462,7 @@ string Function HandleDrop(int index)
 				else
 					summary += "0"
 				endif
+			endif
 
 		else	;We're not replacing items or don't have a location to replace this item to.
 			summary = "0001"
@@ -547,10 +549,10 @@ Function HandleCollapseAll(Form itemToRemember, int quantityToRemember, ObjectRe
 		endif
 
 		Stack.RemoveDuplicate(itemToRemember)	;Remove this item from the list of duplicates.
-		existingItemIndex = currentIndex	;Record that this item is now on the top of the stack.
+		existingItemIndex = Stack.top	;Record that this item is now on the top of the stack.
 
 	else	;If this item occupies one or no slots in the stack.
-		existingItemIndex = items.Find(itemToRemember)	;Search for this item in the stack.
+		existingItemIndex = Stack.Find(itemToRemember)	;Search for this item in the stack.
 	endif
 
 	if existingItemIndex < 0	;If we don't already have this item in the stack.

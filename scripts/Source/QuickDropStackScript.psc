@@ -47,11 +47,11 @@ int Property size = 5 Auto
 int Property depth = 0 Auto
 {The current depth of the stack - the number of slots that are actually filled.}
 
-Form[] duplicates
-{An array containing items that are duplicated in this stack.}
-
 Static Property XMarker Auto
 {An XMarker, of the type used to mark world locations. Needed in this script for comparison operations.}
+
+Form[] duplicates
+;An array containing items that are duplicated in this stack.
 
 Event OnInit()
 	{Perform script setup.}
@@ -123,7 +123,7 @@ Auto State Ready
 	Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
 		{Push a new item onto the stack.}
 		GoToState("Working")
-		_Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+		_Push(itemToRemember, quantityToRemember, locationToRemember)
 		GoToState("Ready")
 	EndFunction
 
@@ -179,9 +179,9 @@ Auto State Ready
 	bool Function HasDuplicate(Form query)
 		{Check whether the given form is recorded as a duplicate.}
 		GoToState("Working")
-		bool duplicates = _HasDuplicate(query)
+		bool duplicate = _HasDuplicate(query)
 		GoToState("Ready")
-		return duplicates
+		return duplicate
 	EndFunction
 
 	Function RemoveDuplicate(Form query)
@@ -239,7 +239,7 @@ Function _Remove(int index, bool del = True)
 	;Clear the top item of the stack.
 	items[top] = None
 	locations[top] = None
-	top = GetPreviousStackIndex()
+	top = GetPreviousStackIndex(top)
 	depth -= 1
 EndFunction
 
@@ -273,8 +273,8 @@ Function _MoveToTop(int index)
 	int tempQuantity = quantities[index]
 	ObjectReference tempLocation = locations[index]
 
-	Stack._Remove(index, False)
-	Stack._Push(tempItem, tempQuantity, tempLocation)
+	_Remove(index, False)
+	_Push(tempItem, tempQuantity, tempLocation)
 EndFunction
 
 Function _RecordDuplicates()
@@ -320,7 +320,7 @@ EndFunction
 
 bool Function HasContainer(int index = -1)
 	{Whether or not container data is stored at the given index.}
-	if index = -1
+	if index == -1
 		index = top
 	endif
 
@@ -329,7 +329,7 @@ EndFunction
 
 bool Function HasWorldLocation(int index = -1)
 	{Whether or not world location data is stored at the given index.}
-	if index = -1
+	if index == -1
 		index = top
 	endif
 
