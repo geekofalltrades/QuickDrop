@@ -37,6 +37,12 @@ int[] Property quantities Auto
 ObjectReference[] Property locations Auto
 {The world location or container the corresponding item came from, or None if no location data is remembered.}
 
+Form Property itemBuffer = None Auto
+{Contains the item we most recently pushed, popped, or removed, so that it can be accessed for notifications.}
+
+int Property quantityBuffer = 0 Auto
+{Contains the quantity we most recently pushed, popped, or removed, so that it can be accessed for notifications.}
+
 ;Start top at 9 so that the first call to Push sets it back to 0.
 int Property top = 9 Auto
 {The index representing the top of the stack.}
@@ -115,6 +121,10 @@ Function RemoveDuplicate(Form query)
 	{Don't remove duplicate records while not Ready.}
 EndFunction
 
+Function ClearBuffers()
+	{Do not clear buffers while not Ready.}
+EndFunction
+
 Auto State Ready
 	;In Ready state, state-dependent entry points into the stack are available to callers.
 	;These are driver functions that call underlying workhorse functions, so that the empty-state
@@ -190,6 +200,13 @@ Auto State Ready
 		_RemoveDuplicate(query)
 		GoToState("Ready")
 	EndFunction
+
+	Function ClearBuffers()
+		{Clear all stack buffers.}
+		GoToState("Working")
+		_ClearBuffers()
+		GoToState("Ready")
+	EndFunction
 EndState
 
 Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
@@ -203,6 +220,9 @@ Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference loca
 	items[top] = itemToRemember
 	quantities[top] = quantityToRemember
 	locations[top] = locationToRemember
+
+	itemBuffer = itemToRemember
+	quantityBuffer = quantityToRemember
 EndFunction
 
 Function _Pop()
@@ -212,6 +232,9 @@ Function _Pop()
 	if locations[top] != None && locations[top].GetBaseObject() == XMarker
 		locations[top].Delete()	;Mark the XMarker for deletion.
 	endif
+
+	itemBuffer = items[top]
+	quantityBuffer = quantities[top]
 
 	items[top] = None
 	locations[top] = None
@@ -226,6 +249,9 @@ Function _Remove(int index, bool del = True)
 	if del && locations[index] != None && locations[index].GetBaseObject() == XMarker
 		locations[index].Delete()	;Mark the XMarker for deletion.
 	endif
+
+	itemBuffer = items[index]
+	quantityBuffer = quantities[index]
 
 	;Shift stack down, overwriting this index.
 	While index != top
@@ -316,6 +342,12 @@ Function _RemoveDuplicate(Form query)
 			duplicates[index] = None
 		endif
 	endif
+EndFunction
+
+Function _ClearBuffers()
+	{Clear all stack buffers.}
+	itemBuffer = None
+	quantityBuffer = 0
 EndFunction
 
 bool Function HasContainer(int index = -1)
