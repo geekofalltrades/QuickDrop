@@ -343,34 +343,39 @@ Function DropSingleItem(int index)
 		if StringUtil.GetNthChar(summary, 0) == "1"	;If we tried to replace this item.
 			if StringUtil.GetNthChar(summary, 1) == "1"	;If we tried to replace in a container
 				if notifyOnReplaceInContainer && StringUtil.GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in a container.
-					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") replaced in container.")
+					Debug.Notification("QuickDrop: " + Stack.itemBuffer.GetName() + " (" + Stack.quantityBuffer + ") replaced in container.")
 				elseif notifyOnFailToReplaceInContainer && StringUtil.GetNthChar(summary, 2) == "0"	;If we failed to replace in a container.
-					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") could not be replaced in container.")
+					Debug.Notification("QuickDrop: " + Stack.itemBuffer.GetName() + " (" + Stack.quantityBuffer + ") could not be replaced in container.")
 				endif
 
 			else	;If we tried to replace in the world.
 				if notifyOnReplaceInWorld && StringUtil.GetNthChar(summary, 2) == "1"	;If we succeeded in replacing in the world.
-					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") replaced in world.")
+					Debug.Notification("QuickDrop: " + Stack.itemBuffer.GetName() + " (" + Stack.quantityBuffer + ") replaced in world.")
 				elseif notifyOnFailToReplaceInWorld && StringUtil.GetNthChar(summary, 2) == "0"	;If we failed to replace in the world.
-					Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") could not be replaced in world.")
+					Debug.Notification("QuickDrop: " + Stack.itemBuffer.GetName() + " (" + Stack.quantityBuffer + ") could not be replaced in world.")
 				endif
 			endif
 		endif
 
 		if notifyOnDrop && StringUtil.GetNthChar(summary, 3) == "1"	;If we dropped this item.
-			Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") dropped.")
+			Debug.Notification("QuickDrop: " + Stack.itemBuffer.GetName() + " (" + Stack.quantityBuffer + ") dropped.")
 		endif
+
+		Stack.ClearBuffers()
 	endif
 EndFunction
 
 Function KeepSingleItem(int index)
 	{Keep the item at the given index and display appropriate notifications.}
 	if Stack.depth
+		Stack.Remove(index)
+
 		if notifyOnKeep
-			Debug.Notification("QuickDrop: " + Stack.items[Stack.top].GetName() + " (" + Stack.quantities[Stack.top] + ") kept.")
+			Debug.Notification("QuickDrop: " + Stack.itemBuffer.GetName() + " (" + Stack.quantityBuffer + ") kept.")
 		endif
 
-		Stack.Remove(index)
+		Stack.ClearBuffers()
+
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
@@ -401,6 +406,8 @@ Function DropAllItems()
 			Stack.Align()
 		endif
 
+		Stack.ClearBuffers()
+
 	else
 		QuickDropNoItemsRemembered.Show()
 	endif
@@ -418,6 +425,7 @@ Function KeepAllItems()
 		endif
 
 		Stack.Align()
+		Stack.ClearBuffers()
 
 	else
 		QuickDropNoItemsRemembered.Show()
@@ -449,6 +457,8 @@ Function DropMultipleItems(int[] indices)
 	if !Stack.depth	;If we succeeded in clearing the entire stack.
 		Stack.Align()
 	endif
+
+	Stack.ClearBuffers()
 EndFunction
 
 Function KeepMultipleItems(int[] indices)
@@ -465,6 +475,8 @@ Function KeepMultipleItems(int[] indices)
 	if !Stack.depth	;If we succeeded in clearing the entire stack.
 		Stack.Align()
 	endif
+
+	Stack.ClearBuffers()
 EndFunction
 
 string Function HandleDrop(int index)
