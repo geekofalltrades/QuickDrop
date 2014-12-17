@@ -121,6 +121,11 @@ Function RemoveDuplicate(Form query)
 	{Don't remove duplicate records while not Ready.}
 EndFunction
 
+
+Function BufferIndex(int index)
+	{Do not set buffers while not Ready.}
+EndFunction
+
 Function ClearBuffers()
 	{Do not clear buffers while not Ready.}
 EndFunction
@@ -201,6 +206,13 @@ Auto State Ready
 		GoToState("Ready")
 	EndFunction
 
+	Function BufferIndex(int index)
+		{Buffer the given index.}
+		GoToState("Working")
+		_BufferIndex(index)
+		GoToState("Ready")
+	EndFunction
+
 	Function ClearBuffers()
 		{Clear all stack buffers.}
 		GoToState("Working")
@@ -221,8 +233,7 @@ Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference loca
 	quantities[top] = quantityToRemember
 	locations[top] = locationToRemember
 
-	itemBuffer = itemToRemember
-	quantityBuffer = quantityToRemember
+	_BufferIndex(top)
 EndFunction
 
 Function _Pop()
@@ -233,8 +244,7 @@ Function _Pop()
 		locations[top].Delete()	;Mark the XMarker for deletion.
 	endif
 
-	itemBuffer = items[top]
-	quantityBuffer = quantities[top]
+	_BufferIndex(top)
 
 	items[top] = None
 	locations[top] = None
@@ -250,8 +260,7 @@ Function _Remove(int index, bool del = True)
 		locations[index].Delete()	;Mark the XMarker for deletion.
 	endif
 
-	itemBuffer = items[index]
-	quantityBuffer = quantities[index]
+	_BufferIndex(index)
 
 	;Shift stack down, overwriting this index.
 	While index != top
@@ -342,6 +351,12 @@ Function _RemoveDuplicate(Form query)
 			duplicates[index] = None
 		endif
 	endif
+EndFunction
+
+Function _BufferIndex(int index)
+	{Buffer the given index.}
+	itemBuffer = items[index]
+	quantityBuffer = quantities[index]
 EndFunction
 
 Function _ClearBuffers()

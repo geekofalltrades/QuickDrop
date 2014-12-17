@@ -555,9 +555,10 @@ bool Function ReplaceItemInContainer(int index)
 		Stack.Remove(index)
 		ForgetScript.GoToState("Enabled")
 		return True
+	else
+		Stack.BufferIndex(index)	;Buffer this index manually so that we can notify about failed replacements.
+		return False
 	endif
-
-	return False
 EndFunction
 
 bool Function CanReplaceInWorld(int index)
@@ -576,9 +577,10 @@ bool Function ReplaceItemInWorld(int index)
 		Stack.Remove(index)
 		ForgetScript.GoToState("Enabled")
 		return True
+	else
+		Stack.BufferIndex(index)	;Buffer this index manually so that we can notify about failed replacements.
+		return False
 	endif
-
-	return False
 EndFunction
 
 Function HandleRememberAll(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
