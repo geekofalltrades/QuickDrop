@@ -144,8 +144,9 @@ Event OnConfigClose()
 	RegisterForKey(QuickDropQuest.dropAllHotkey)
 	RegisterForKey(QuickDropQuest.keepAllHotkey)
 
-	stackToggleIDs = None
-	selected = None
+	;This is apparently the closest we can get to deallocating these arrays. Papyrus.
+	stackToggleIDs = new int[1]
+	selected = new bool[1]
 EndEvent
 
 State StackClearLocation
