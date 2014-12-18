@@ -39,6 +39,21 @@ Event OnPageReset(string page)
 	endif
 EndEvent
 
+Event OnConfigClose()
+	{When the menu is closed, rebind the hotkeys and clean out any persistent state data.}
+	UnregisterForAllKeys()
+	RegisterForKey(QuickDropQuest.toggleRememberingHotkey)
+	RegisterForKey(QuickDropQuest.showHotkey)
+	RegisterForKey(QuickDropQuest.dropHotkey)
+	RegisterForKey(QuickDropQuest.keepHotkey)
+	RegisterForKey(QuickDropQuest.dropAllHotkey)
+	RegisterForKey(QuickDropQuest.keepAllHotkey)
+
+	;This is apparently the closest we can get to deallocating these arrays. Papyrus.
+	stackToggleIDs = new int[1]
+	selected = new bool[1]
+EndEvent
+
 Function DrawStackPage()
 	{Draw the "Stack" settings page.}
 	AddHeaderOption("Options")
@@ -76,78 +91,6 @@ Function DrawStackPage()
 		iterations += 1
 	EndWhile
 EndFunction
-
-Function DrawGeneralSettingsPage()
-	{Draw the "General Settings" settings page.}
-	AddHeaderOption("Hotkeys")
-	AddKeymapOptionST("ToggleRememberingHotkey", "Toggle Remembering", QuickDropQuest.toggleRememberingHotkey)
-	AddKeymapOptionST("ShowHotkey", "Show Current Item", QuickDropQuest.showHotkey)
-	AddKeymapOptionST("DropHotkey", "Drop Current Item", QuickDropQuest.dropHotkey)
-	AddKeymapOptionST("KeepHotkey", "Keep Current Item", QuickDropQuest.keepHotkey)
-	AddKeymapOptionST("DropAllHotkey", "Drop All Items", QuickDropQuest.dropAllHotkey)
-	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
-	SetCursorPosition(1)
-	AddHeaderOption("Settings")
-	AddSliderOptionST("MaxRemembered", "Items Remembered", Stack.size, "{0}")
-	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
-	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingStateToString())
-EndFunction
-
-Function DrawPickupDropPage()
-	{Draw the "Pickup/Drop" settings page.}
-	AddHeaderOption("Remembering Picked Up Items")
-	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
-	AddSliderOptionST("PickUpBehaviorRememberAllModifier", "    Max Per Slot", QuickDropQuest.PickUpBehaviorModifier[0])
-	AddToggleOptionST("PickUpBehaviorCollapseAll", "Remember to One Stack Slot", QuickDropQuest.pickUpBehavior == 1)
-	AddSliderOptionST("PickUpBehaviorCollapseAllModifier", "    Max In Combined Slot", QuickDropQuest.PickUpBehaviorModifier[1])
-	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
-	AddSliderOptionST("PickUpBehaviorRememberEachModifier", "    Max To Remember", QuickDropQuest.PickUpBehaviorModifier[2])
-	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
-	AddSliderOptionST("PickUpBehaviorRememberSomeModifier", "    Max To Remember", QuickDropQuest.PickUpBehaviorModifier[3])
-	AddEmptyOption()
-	AddHeaderOption("Persistent Items")
-	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
-	SetCursorPosition(1)
-	AddHeaderOption("Notifications")
-	AddToggleOptionST("NotifyOnDrop", "Item Dropped", QuickDropQuest.notifyOnDrop)
-	AddToggleOptionST("NotifyOnKeep", "Item Kept", QuickDropQuest.notifyOnKeep)
-	AddToggleOptionST("NotifyOnPersistent", "Persistent Items", QuickDropQuest.notifyOnPersistent)
-EndFunction
-
-Function DrawReplacePage()
-	AddHeaderOption("Replace Items in Containers")
-	AddToggleOptionST("ReplaceInContainer", "Replace in Container", QuickDropQuest.replaceInContainer)
-	AddSliderOptionST("ReplaceInContainerDistance", "Replace in Container Distance", QuickDropQuest.replaceInContainerDistance, "{0}")
-	AddToggleOptionST("ReplaceInContainerDropOnFail", "Drop if Can't Replace in Container", QuickDropQuest.replaceInContainerDropOnFail)
-	AddToggleOptionST("RememberContainer", "Always Remember Containers", QuickDropQuest.rememberContainer)
-	AddEmptyOption()
-	AddHeaderOption("Replace Items in World")
-	AddToggleOptionST("ReplaceInWorld", "Replace in World", QuickDropQuest.replaceInWorld)
-	AddSliderOptionST("ReplaceInWorldDistance", "Replace in World Distance", QuickDropQuest.replaceInWorldDistance, "{0}")
-	AddToggleOptionST("ReplaceInWorldDropOnFail", "Drop if Can't Replace in World", QuickDropQuest.replaceInWorldDropOnFail)
-	AddToggleOptionST("RememberWorldLocation", "Always Remember World Locations", QuickDropQuest.rememberWorldLocation)
-	SetCursorPosition(1)
-	AddHeaderOption("Notifications")
-	AddToggleOptionST("NotifyOnReplaceInContainer", "Item Replaced in Container", QuickDropQuest.notifyOnReplaceInContainer)
-	AddToggleOptionST("NotifyOnFailToReplaceInContainer", "Failed to Replace In Container", QuickDropQuest.notifyOnFailToReplaceInContainer)
-	AddToggleOptionST("NotifyOnReplaceInWorld", "Item Replaced in World", QuickDropQuest.notifyOnReplaceInWorld)
-	AddToggleOptionST("NotifyOnFailToReplaceInWorld", "Failed to Replace In World", QuickDropQuest.notifyOnFailToReplaceInWorld)
-EndFunction
-
-Event OnConfigClose()
-	{When the menu is closed, rebind the hotkeys and clean out any persistent state data.}
-	UnregisterForAllKeys()
-	RegisterForKey(QuickDropQuest.toggleRememberingHotkey)
-	RegisterForKey(QuickDropQuest.showHotkey)
-	RegisterForKey(QuickDropQuest.dropHotkey)
-	RegisterForKey(QuickDropQuest.keepHotkey)
-	RegisterForKey(QuickDropQuest.dropAllHotkey)
-	RegisterForKey(QuickDropQuest.keepAllHotkey)
-
-	;This is apparently the closest we can get to deallocating these arrays. Papyrus.
-	stackToggleIDs = new int[1]
-	selected = new bool[1]
-EndEvent
 
 State StackClearLocation
 	Event OnSelectST()
@@ -525,6 +468,22 @@ Event OnOptionHighlight(int option)
 	endif
 EndEvent
 
+Function DrawGeneralSettingsPage()
+	{Draw the "General Settings" settings page.}
+	AddHeaderOption("Hotkeys")
+	AddKeymapOptionST("ToggleRememberingHotkey", "Toggle Remembering", QuickDropQuest.toggleRememberingHotkey)
+	AddKeymapOptionST("ShowHotkey", "Show Current Item", QuickDropQuest.showHotkey)
+	AddKeymapOptionST("DropHotkey", "Drop Current Item", QuickDropQuest.dropHotkey)
+	AddKeymapOptionST("KeepHotkey", "Keep Current Item", QuickDropQuest.keepHotkey)
+	AddKeymapOptionST("DropAllHotkey", "Drop All Items", QuickDropQuest.dropAllHotkey)
+	AddKeymapOptionST("KeepAllHotkey", "Keep All Items", QuickDropQuest.keepAllHotkey)
+	SetCursorPosition(1)
+	AddHeaderOption("Settings")
+	AddSliderOptionST("MaxRemembered", "Items Remembered", Stack.size, "{0}")
+	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
+	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingStateToString())
+EndFunction
+
 bool Function CheckKeyConflict(string conflictControl, string conflictName)
 	{Check for OnKeyMapChange key conflicts and get user input.}
 	if conflictControl != ""
@@ -739,21 +698,26 @@ State ToggleRemembering
 	EndEvent
 EndState
 
-State RememberPersistentItems
-	Event OnSelectST()
-		QuickDropQuest.rememberPersistent = !QuickDropQuest.rememberPersistent
-		SetToggleOptionValueST(QuickDropQuest.rememberPersistent)
-	EndEvent
-
-	Event OnDefaultST()
-		QuickDropQuest.rememberPersistent = False
-		SetToggleOptionValueST(False)
-	EndEvent
-
-	Event OnHighlightST()
-		SetInfoText("Remember items with persistent references. This option allows QuickDrop to remember and drop quest items\nand some other items that might not normally be remembered. Use carefully - dropping quest items might break\nquest progression. Also consider setting the \"Persistent Items\" notification.")
-	EndEvent
-EndState
+Function DrawPickupDropPage()
+	{Draw the "Pickup/Drop" settings page.}
+	AddHeaderOption("Remembering Picked Up Items")
+	AddToggleOptionST("PickUpBehaviorRememberAll", "Remember Number Picked Up", QuickDropQuest.pickUpBehavior == 0)
+	AddSliderOptionST("PickUpBehaviorRememberAllModifier", "    Max Per Slot", QuickDropQuest.PickUpBehaviorModifier[0])
+	AddToggleOptionST("PickUpBehaviorCollapseAll", "Remember to One Stack Slot", QuickDropQuest.pickUpBehavior == 1)
+	AddSliderOptionST("PickUpBehaviorCollapseAllModifier", "    Max In Combined Slot", QuickDropQuest.PickUpBehaviorModifier[1])
+	AddToggleOptionST("PickUpBehaviorRememberEach", "Remember Each Individually", QuickDropQuest.pickUpBehavior == 2)
+	AddSliderOptionST("PickUpBehaviorRememberEachModifier", "    Max To Remember", QuickDropQuest.PickUpBehaviorModifier[2])
+	AddToggleOptionST("PickUpBehaviorRememberSome", "Remember Only Some Picked Up", QuickDropQuest.pickUpBehavior == 3)
+	AddSliderOptionST("PickUpBehaviorRememberSomeModifier", "    Max To Remember", QuickDropQuest.PickUpBehaviorModifier[3])
+	AddEmptyOption()
+	AddHeaderOption("Persistent Items")
+	AddToggleOptionST("RememberPersistentItems", "Remember Persistent Items", QuickDropQuest.rememberPersistent)
+	SetCursorPosition(1)
+	AddHeaderOption("Notifications")
+	AddToggleOptionST("NotifyOnDrop", "Item Dropped", QuickDropQuest.notifyOnDrop)
+	AddToggleOptionST("NotifyOnKeep", "Item Kept", QuickDropQuest.notifyOnKeep)
+	AddToggleOptionST("NotifyOnPersistent", "Persistent Items", QuickDropQuest.notifyOnPersistent)
+EndFunction
 
 Function PickUpBehaviorOnSelect(int option)
 	QuickDropQuest.AdjustPickUpBehavior(option)
@@ -920,6 +884,90 @@ State PickUpBehaviorRememberSomeModifier
 	EndEvent
 EndState
 
+State RememberPersistentItems
+	Event OnSelectST()
+		QuickDropQuest.rememberPersistent = !QuickDropQuest.rememberPersistent
+		SetToggleOptionValueST(QuickDropQuest.rememberPersistent)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.rememberPersistent = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Remember items with persistent references. This option allows QuickDrop to remember and drop quest items\nand some other items that might not normally be remembered. Use carefully - dropping quest items might break\nquest progression. Also consider setting the \"Persistent Items\" notification.")
+	EndEvent
+EndState
+
+State NotifyOnDrop
+	Event OnSelectST()
+		QuickDropQuest.notifyOnDrop = !QuickDropQuest.notifyOnDrop
+		SetToggleOptionValueST(QuickDropQuest.notifyOnDrop)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.notifyOnDrop = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Display a message when the current item is dropped.")
+	EndEvent
+EndState
+
+State NotifyOnKeep
+	Event OnSelectST()
+		QuickDropQuest.notifyOnKeep = !QuickDropQuest.notifyOnKeep
+		SetToggleOptionValueST(QuickDropQuest.notifyOnKeep)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.notifyOnKeep = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Display a message when the current item is kept.")
+	EndEvent
+EndState
+
+State NotifyOnPersistent
+	Event OnSelectST()
+		QuickDropQuest.notifyOnPersistent = !QuickDropQuest.notifyOnPersistent
+		SetToggleOptionValueST(QuickDropQuest.notifyOnPersistent)
+	EndEvent
+
+	Event OnDefaultST()
+		QuickDropQuest.notifyOnPersistent = False
+		SetToggleOptionValueST(False)
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Display a message when an item picked up has a persistent reference.\nPersistence is a property of certain significant items, notably quest items.\nDropping these items with QuickDrop may break quest progression.")
+	EndEvent
+EndState
+
+Function DrawReplacePage()
+	AddHeaderOption("Replace Items in Containers")
+	AddToggleOptionST("ReplaceInContainer", "Replace in Container", QuickDropQuest.replaceInContainer)
+	AddSliderOptionST("ReplaceInContainerDistance", "Replace in Container Distance", QuickDropQuest.replaceInContainerDistance, "{0}")
+	AddToggleOptionST("ReplaceInContainerDropOnFail", "Drop if Can't Replace in Container", QuickDropQuest.replaceInContainerDropOnFail)
+	AddToggleOptionST("RememberContainer", "Always Remember Containers", QuickDropQuest.rememberContainer)
+	AddEmptyOption()
+	AddHeaderOption("Replace Items in World")
+	AddToggleOptionST("ReplaceInWorld", "Replace in World", QuickDropQuest.replaceInWorld)
+	AddSliderOptionST("ReplaceInWorldDistance", "Replace in World Distance", QuickDropQuest.replaceInWorldDistance, "{0}")
+	AddToggleOptionST("ReplaceInWorldDropOnFail", "Drop if Can't Replace in World", QuickDropQuest.replaceInWorldDropOnFail)
+	AddToggleOptionST("RememberWorldLocation", "Always Remember World Locations", QuickDropQuest.rememberWorldLocation)
+	SetCursorPosition(1)
+	AddHeaderOption("Notifications")
+	AddToggleOptionST("NotifyOnReplaceInContainer", "Item Replaced in Container", QuickDropQuest.notifyOnReplaceInContainer)
+	AddToggleOptionST("NotifyOnFailToReplaceInContainer", "Failed to Replace In Container", QuickDropQuest.notifyOnFailToReplaceInContainer)
+	AddToggleOptionST("NotifyOnReplaceInWorld", "Item Replaced in World", QuickDropQuest.notifyOnReplaceInWorld)
+	AddToggleOptionST("NotifyOnFailToReplaceInWorld", "Failed to Replace In World", QuickDropQuest.notifyOnFailToReplaceInWorld)
+EndFunction
+
 State ReplaceInContainer
 	Event OnSelectST()
 		QuickDropQuest.replaceInContainer = !QuickDropQuest.replaceInContainer
@@ -1066,38 +1114,6 @@ State RememberWorldLocation
 	EndEvent
 EndState
 
-State NotifyOnPersistent
-	Event OnSelectST()
-		QuickDropQuest.notifyOnPersistent = !QuickDropQuest.notifyOnPersistent
-		SetToggleOptionValueST(QuickDropQuest.notifyOnPersistent)
-	EndEvent
-
-	Event OnDefaultST()
-		QuickDropQuest.notifyOnPersistent = False
-		SetToggleOptionValueST(False)
-	EndEvent
-
-	Event OnHighlightST()
-		SetInfoText("Display a message when an item picked up has a persistent reference.\nPersistence is a property of certain significant items, notably quest items.\nDropping these items with QuickDrop may break quest progression.")
-	EndEvent
-EndState
-
-State NotifyOnDrop
-	Event OnSelectST()
-		QuickDropQuest.notifyOnDrop = !QuickDropQuest.notifyOnDrop
-		SetToggleOptionValueST(QuickDropQuest.notifyOnDrop)
-	EndEvent
-
-	Event OnDefaultST()
-		QuickDropQuest.notifyOnDrop = False
-		SetToggleOptionValueST(False)
-	EndEvent
-
-	Event OnHighlightST()
-		SetInfoText("Display a message when the current item is dropped.")
-	EndEvent
-EndState
-
 State NotifyOnReplaceInContainer
 	Event OnSelectST()
 		QuickDropQuest.notifyOnReplaceInContainer = !QuickDropQuest.notifyOnReplaceInContainer
@@ -1159,21 +1175,5 @@ State NotifyOnFailToReplaceInWorld
 
 	Event OnHighlightST()
 		SetInfoText("Display a message when the current item(s) can't be replaced in their original world location.")
-	EndEvent
-EndState
-
-State NotifyOnKeep
-	Event OnSelectST()
-		QuickDropQuest.notifyOnKeep = !QuickDropQuest.notifyOnKeep
-		SetToggleOptionValueST(QuickDropQuest.notifyOnKeep)
-	EndEvent
-
-	Event OnDefaultST()
-		QuickDropQuest.notifyOnKeep = False
-		SetToggleOptionValueST(False)
-	EndEvent
-
-	Event OnHighlightST()
-		SetInfoText("Display a message when the current item is kept.")
 	EndEvent
 EndState
