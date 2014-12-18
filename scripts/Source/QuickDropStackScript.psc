@@ -122,7 +122,6 @@ Function RemoveDuplicate(Form query)
 	{Don't remove duplicate records while not Ready.}
 EndFunction
 
-
 Function BufferIndex(int index)
 	{Do not set buffers while not Ready.}
 EndFunction

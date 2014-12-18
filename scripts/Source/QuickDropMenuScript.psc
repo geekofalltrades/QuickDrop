@@ -14,7 +14,9 @@ QuickDropPlayerCrosshairScript Property CrosshairScript Auto
 {The player script responsible for tracking OnCrosshairRefChanged events.}
 
 int[] stackToggleIDs
+int[] stackEmptyIDs
 bool[] selected
+int numSelected
 
 Event OnConfigInit()
 	{Perform menu setup.}
@@ -39,6 +41,24 @@ Event OnPageReset(string page)
 	endif
 EndEvent
 
+Event OnConfigOpen()
+	{Allocate arrays for stack selection. They will be kept until the menu is closed.}
+	;The ID arrays are initialized on first call to to DrawStackPage.
+	;Additionally, new IDs are procured every time a page reset occurs.
+	stackToggleIDs = new int[10]
+	stackEmptyIDs = new int[10]
+
+	;The selected array's state persists for the duration of the menu session. It's initialized now.
+	selected = new bool[10]
+	int i = 0
+	While i < selected.Length
+		selected[i] = False
+		i += 1
+	EndWhile
+
+	numSelected = 0
+EndEvent
+
 Event OnConfigClose()
 	{When the menu is closed, rebind the hotkeys and clean out any persistent state data.}
 	UnregisterForAllKeys()
@@ -51,37 +71,43 @@ Event OnConfigClose()
 
 	;This is apparently the closest we can get to deallocating these arrays. Papyrus.
 	stackToggleIDs = new int[1]
+	stackEmptyIDs = new int[1]
 	selected = new bool[1]
 EndEvent
 
 Function DrawStackPage()
 	{Draw the "Stack" settings page.}
 	AddHeaderOption("Options")
-	AddTextOptionST("StackClearLocation", "Clear Locations From Selection", "", OPTION_FLAG_DISABLED)
-	AddTextOptionST("StackDropSelected", "Drop Selected", "", OPTION_FLAG_DISABLED)
-	AddTextOptionST("StackKeepSelected", "Keep Selected", "", OPTION_FLAG_DISABLED)
-	AddTextOptionST("StackMoveUp", "Move Up", "", OPTION_FLAG_DISABLED)
-	AddTextOptionST("StackMoveDown", "Move Down", "", OPTION_FLAG_DISABLED)
-	AddTextOptionST("StackSwapSelected", "Swap", "", OPTION_FLAG_DISABLED)
-	AddTextOptionST("StackCombineUp", "Combine Up", "", OPTION_FLAG_DISABLED)
-	AddTextOptionST("StackCombineDown", "Combine Down", "", OPTION_FLAG_DISABLED)
+	AddTextOptionST("StackClearLocation", "Clear Locations From Selection", "", ClearLocationFlag())
+
+	int keepDropFlagValue = KeepDropFlag()
+	AddTextOptionST("StackDropSelected", "Drop Selected", "", keepDropFlagValue)
+	AddTextOptionST("StackKeepSelected", "Keep Selected", "", keepDropFlagValue)
+
+	AddTextOptionST("StackMoveUp", "Move Up", "", MoveUpFlag())
+	AddTextOptionST("StackMoveDown", "Move Down", "", MoveDownFlag())
+	AddTextOptionST("StackSwapSelected", "Swap", "", SwapFlag())
+
+	int combineFlagValue = CombineFlag()
+	AddTextOptionST("StackCombineUp", "Combine Up", "", combineFlagValue)
+	AddTextOptionST("StackCombineDown", "Combine Down", "", combineFlagValue)
 	AddEmptyOption()
+
 	AddHeaderOption("Selection")
 	AddTextOptionST("StackInvertSelection", "Invert Selection", "")
 	AddTextOptionST("StackSelectAll", "Select All", "")
 	AddTextOptionST("StackSelectNone", "Select None", "")
 
-	stackToggleIDs = new int[10]
-	selected = new bool[10]
+	SetCursorPosition(1)
+	AddHeaderOption("Current Remembered Items")
+
 	int i = 0
 	While i < stackToggleIDs.Length
 		stackToggleIDs[i] = -1
-		selected[i] = False
+		stackEmptyIDs[i] = -1
 		i += 1
 	EndWhile
 
-	SetCursorPosition(1)
-	AddHeaderOption("Current Remembered Items")
 	int iterations = 0
 	i = Stack.top
 	While iterations < Stack.depth
@@ -89,6 +115,13 @@ Function DrawStackPage()
 		stackToggleIDs[i] = AddToggleOption(Stack.items[i].GetName() + " (" + Stack.quantities[i] + ")", selected[i])
 		i = Stack.GetPreviousStackIndex(i)
 		iterations += 1
+	EndWhile
+
+	i = 0
+	While iterations < Stack.size
+		stackEmptyIDs[i] = AddEmptyOption()
+		iterations += 1
+		i += 1
 	EndWhile
 EndFunction
 
@@ -122,7 +155,11 @@ int[] Function GetSelectedIndices()
 	While i >= 0
 		selectedIndices[numSelected] = i
 		numSelected += 1
-		i = selected.Rfind(True, i - 1)
+		if i - 1 == -1	;Edge case: if Rfind returns 0, then our next Rfind would be from index 0 - 1 = -1 (the end of the array), and we enter an infinite loop.
+			i = -1
+		else
+			i = selected.Rfind(True, i - 1)
+		endif
 	EndWhile
 
 	;Wrap around to the top of the array and search back down the stack to the current index.
@@ -178,14 +215,10 @@ State StackKeepSelected
 EndState
 
 Function Swap(int indexOne, int indexTwo)
-	{Swap the given indices. Wrapper around Stack.Swap that additionally handles swapping menu data.}
+	{Swap the given indices. Wrapper around Stack.Swap that additionally handles swapping menu selection data.}
 	bool tempSelected = selected[indexOne]
 	selected[indexOne] = selected[indexTwo]
 	selected[indexTwo] = tempSelected
-
-	int tempStackToggleID = stackToggleIDs[indexOne]
-	stackToggleIDs[indexOne] = stackToggleIDs[indexTwo]
-	stackToggleIDs[indexTwo] = tempStackToggleID
 
 	Stack.Swap(indexOne, indexTwo)
 EndFunction
@@ -226,6 +259,19 @@ State StackSwapSelected
 	EndEvent
 EndState
 
+Function Remove(int index)
+	{Remove the given stack index. Wrapper around Stack.Remove that additionally handles removing menu selection data.}
+	Stack.Remove(index)
+
+	While index != Stack.top
+		int nextIndex = Stack.GetNextStackIndex(index)
+		selected[index] = selected[nextIndex]
+		index = nextIndex
+	EndWhile
+
+	selected[index] = False
+EndFunction
+
 State StackCombineUp
 	Event OnSelectST()
 		int[] indices = GetSelectedIndices()
@@ -234,12 +280,13 @@ State StackCombineUp
 
 		While indices[i] >= 0 && i < indices.Length
 			Stack.quantities[combineTo] = Stack.quantities[combineTo] + Stack.quantities[indices[i]]
-			Stack.Remove(indices[i])
+			Remove(indices[i])
 			combineTo = Stack.GetPreviousStackIndex(combineTo)	;We just pulled a slot out from the middle of the stack, so adjust our top-most index down.
 			i += 1
 		EndWhile
 
 		Stack.locations[combineTo] = None
+		ForcePageReset()
 	EndEvent
 
 	Event OnHighlightST()
@@ -263,11 +310,12 @@ State StackCombineDown
 		i = 0
 		While indices[i] != combineTo
 			Stack.quantities[combineTo] = Stack.quantities[combineTo] + Stack.quantities[indices[i]]
-			Stack.Remove(indices[i])
+			Remove(indices[i])
 			i += 1
 		EndWhile
 
 		Stack.locations[combineTo] = None
+		ForcePageReset()
 	EndEvent
 
 	Event OnHighlightST()
@@ -284,6 +332,9 @@ State StackInvertSelection
 			i = Stack.GetPreviousStackIndex(i)
 			iterations += 1
 		EndWhile
+
+		numSelected = Stack.depth - numSelected
+
 		UpdateStackOptions()
 	EndEvent
 
@@ -301,6 +352,9 @@ State StackSelectAll
 			i = Stack.GetPreviousStackIndex(i)
 			iterations += 1
 		EndWhile
+
+		numSelected = Stack.depth
+
 		UpdateStackOptions()
 	EndEvent
 
@@ -318,6 +372,9 @@ State StackSelectNone
 			i = Stack.GetPreviousStackIndex(i)
 			iterations += 1
 		EndWhile
+
+		numSelected = 0
+
 		UpdateStackOptions()
 	EndEvent
 
@@ -326,8 +383,83 @@ State StackSelectNone
 	EndEvent
 EndState
 
+int Function ClearLocationFlag()
+	{Calculate the current flag value for the clear location option.}
+	int i = selected.Find(True)
+	While i >= 0
+		if Stack.locations[i] != None
+			return OPTION_FLAG_NONE
+		endif
+		i = selected.Find(True, i + 1)
+	EndWhile
+
+	return OPTION_FLAG_DISABLED
+EndFunction
+
+int Function KeepDropFlag()
+	{Calculate the current flag value for the keep/drop options.}
+	if numSelected > 0
+		return OPTION_FLAG_NONE
+	endif
+
+	return OPTION_FLAG_DISABLED
+EndFunction
+
+int Function MoveUpFlag()
+	{Calculate the current flag value for the Move Up option.}
+	if numSelected == 1
+		int i = selected.Find(True)
+		if i != Stack.top
+			return OPTION_FLAG_NONE
+		endif
+	endif
+
+	return OPTION_FLAG_DISABLED
+EndFunction
+
+int Function MoveDownFlag()
+	{Calculate the current flag value for the Move Down option.}
+	if numSelected == 1
+		i = Stack.GetPreviousStackIndex(selected.Find(True))
+		if i != Stack.top && Stack.items[i] != None
+			return OPTION_FLAG_NONE
+		endif
+	endif
+
+	return OPTION_FLAG_DISABLED
+EndFunction
+
+int Function SwapFlag()
+	{Calculate the current flag value for the Swap option.}
+	if numSelected == 2
+		return OPTION_FLAG_NONE
+	endif
+
+	return OPTION_FLAG_DISABLED
+EndFunction
+
+int Function CombineFlag()
+	{Calculate the current flag value for the Combine Up and Combine Down options.}
+	if numSelected > 1
+		int i = selected.Find(True)
+		Form selectedItem = Stack.items[i]
+
+		i = selected.Find(True, i + 1)
+		While i >= 0
+			if Stack.items[i] != selectedItem
+				return OPTION_FLAG_DISABLED
+			endif
+			i = selected.Find(True, i + 1)
+		EndWhile
+
+		return OPTION_FLAG_NONE
+	endif
+
+	return OPTION_FLAG_DISABLED
+EndFunction
+
 Function SetStackSelectionOptions(int flag, bool noUpdate = False)
-	{Set the given flag on the stack selection options. We want them off while we're working so our state is frozen.}
+	{Set the given flag on the stack selection options. When options are enabled, their values are updated. We want these options off while we're working so our state is frozen.}
 	int i = 0
 	While i < stackToggleIDs.Length && stackToggleIDs[i] >= 0
 		SetOptionFlags(stackToggleIDs[i], flag, True)
@@ -342,7 +474,7 @@ Function SetStackSelectionOptions(int flag, bool noUpdate = False)
 EndFunction
 
 Function DisableStackManipulationOptions()
-	{Disable all stack manipulation options. We want them off while we're working so our state is frozen.}
+	{Disable all stack manipulation options. We want these options off while we're working so our state is frozen.}
 	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackClearLocation")
 	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackDropSelected")
 	SetOptionFlagsST(OPTION_FLAG_DISABLED, True, "StackKeepSelected")
@@ -354,70 +486,23 @@ Function DisableStackManipulationOptions()
 EndFunction
 
 Function UpdateStackOptions()
-	{Update the stack options.}
+	{Update the stack options in bulk. Takes the place of a forced page reset, where one isn't necessary.}
 	SetStackSelectionOptions(OPTION_FLAG_DISABLED, True)	;Disable all options so users can't mess with the state while we're working.
 	DisableStackManipulationOptions()						;Don't update the page, though; this can cause an annoying flash.
 
-	int numSelected = 0
-	int i = selected.Find(True)
-	While i >= 0
-		numSelected += 1
-		i = selected.Find(True, i + 1)
-	EndWhile
+	SetOptionFlagsST(ClearLocationFlag(), True, "StackClearLocation")
 
-	if numSelected > 0
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackDropSelected")
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackKeepSelected")
+	int keepDropFlagValue = KeepDropFlag()
+	SetOptionFlagsST(keepDropFlagValue, True, "StackDropSelected")
+	SetOptionFlagsST(keepDropFlagValue, True, "StackKeepSelected")
 
-		bool clearLocation = False
+	SetOptionFlagsST(MoveUpFlag(), True, "StackMoveUp")
+	SetOptionFlagsST(MoveDownFlag(), True, "StackMoveDown")
+	SetOptionFlagsST(SwapFlag(), True, "StackSwapSelected")
 
-		i = selected.Find(True)
-		While i >= 0 && !clearLocation
-			if Stack.locations[i] != None
-				clearLocation = True
-			endif
-			i = selected.Find(True, i + 1)
-		EndWhile
-
-		if clearLocation
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackClearLocation")
-		endif
-	endif
-
-	if numSelected == 1
-		i = selected.Find(True)
-		if i != Stack.top
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveUp")
-		endif
-
-		i = Stack.GetPreviousStackIndex(i)
-		if i != Stack.top && Stack.items[i] != None
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackMoveDown")
-		endif
-	endif
-
-	if numSelected == 2
-		SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackSwapSelected")
-	endif
-
-	if numSelected > 1
-		i = selected.Find(True)
-		Form selectedItem = Stack.items[i]
-		bool same = True
-
-		i = selected.Find(True, i + 1)
-		While i >= 0 && same
-			if Stack.items[i] != selectedItem
-				same = False
-			endif
-			i = selected.Find(True, i + 1)
-		EndWhile
-
-		if same
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackCombineUp")
-			SetOptionFlagsST(OPTION_FLAG_NONE, True, "StackCombineDown")
-		endif
-	endif
+	int combineFlagValue = CombineFlag()
+	SetOptionFlagsST(combineFlagValue, True, "StackCombineUp")
+	SetOptionFlagsST(combineFlagValue, True, "StackCombineDown")
 
 	SetStackSelectionOptions(OPTION_FLAG_NONE)	;Re-enable stack selection options and refresh the page.
 EndFunction
@@ -428,6 +513,13 @@ Event OnOptionSelect(int option)
 	if index >= 0
 		selected[index] = !selected[index]
 		SetToggleOptionValue(option, selected[index], True)
+
+		if selected[index]
+			numSelected += 1
+		else
+			numSelected -= 1
+		endif
+
 		UpdateStackOptions()
 	endif
 EndEvent
@@ -465,6 +557,11 @@ Event OnOptionHighlight(int option)
 		endif
 
 		SetInfoText(msg)
+	else
+		index = stackEmptyIDs.Find(option)
+		if index >= 0
+			SetInfoText("Empty stack slot.")
+		endif
 	endif
 EndEvent
 
