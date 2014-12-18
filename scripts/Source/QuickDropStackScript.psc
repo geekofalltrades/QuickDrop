@@ -64,6 +64,7 @@ Event OnInit()
 	items = new Form[10]
 	quantities = new int[10]
 	locations = new ObjectReference[10]
+	duplicates = new Form[1]	;Placeholder array.
 
 	int i = 0
 	While i < items.Length
@@ -332,24 +333,20 @@ EndFunction
 
 Function _ClearDuplicates()
 	{Clear the duplicated items.}
-	duplicates = None
+	;Papyrus can't actually deallocate arrays. Creating a new array of length 1 will get the other array garbage collected, though.
+	duplicates = new Form[1]
 EndFunction
 
 bool Function _HasDuplicate(Form query)
 	{Check whether the given form is recorded as a duplicate.}
-	if duplicates != None
-		return duplicates.Find(query) >= 0
-	endif
-	return False
+	return duplicates.Find(query) >= 0
 EndFunction
 
 Function _RemoveDuplicate(Form query)
 	{Remove the record of this form in duplicates, if it exists.}
-	if duplicates != None
-		int index = duplicates.Find(query)
-		if index >= 0
-			duplicates[index] = None
-		endif
+	int index = duplicates.Find(query)
+	if index >= 0
+		duplicates[index] = None
 	endif
 EndFunction
 
