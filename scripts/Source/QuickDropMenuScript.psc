@@ -277,12 +277,11 @@ State StackCombineUp
 			i += 1
 		EndWhile
 
-		Stack.locations[combineTo] = None
 		ForcePageReset()
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Combine selected items of the same type in the top-most selected stack slot.\nThis clears any saved world location or container data for these items.")
+		SetInfoText("Combine selected items of the same type in the top-most selected stack slot.\nThe world location or container data of the top-most slot is preserved.")
 	EndEvent
 EndState
 
@@ -306,12 +305,11 @@ State StackCombineDown
 			i += 1
 		EndWhile
 
-		Stack.locations[combineTo] = None
 		ForcePageReset()
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Combine selected items of the same type in the bottom-most selected stack slot.\nThis clears any saved world location or container data for these items.")
+		SetInfoText("Combine selected items of the same type in the bottom-most selected stack slot.\nThe world location or container data of the bottom-most slot is preserved.")
 	EndEvent
 EndState
 
