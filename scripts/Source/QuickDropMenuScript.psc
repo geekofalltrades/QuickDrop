@@ -14,7 +14,6 @@ QuickDropPlayerCrosshairScript Property CrosshairScript Auto
 {The player script responsible for tracking OnCrosshairRefChanged events.}
 
 int[] stackToggleIDs
-int[] stackEmptyIDs
 bool[] selected
 int numSelected
 
@@ -46,7 +45,6 @@ Event OnConfigOpen()
 	;The ID arrays are initialized on first call to to DrawStackPage.
 	;Additionally, new IDs are procured every time a page reset occurs.
 	stackToggleIDs = new int[10]
-	stackEmptyIDs = new int[10]
 
 	;The selected array's state persists for the duration of the menu session. It's initialized now.
 	selected = new bool[10]
@@ -71,7 +69,6 @@ Event OnConfigClose()
 
 	;This is apparently the closest we can get to deallocating these arrays. Papyrus.
 	stackToggleIDs = new int[1]
-	stackEmptyIDs = new int[1]
 	selected = new bool[1]
 EndEvent
 
@@ -104,7 +101,6 @@ Function DrawStackPage()
 	int i = 0
 	While i < stackToggleIDs.Length
 		stackToggleIDs[i] = -1
-		stackEmptyIDs[i] = -1
 		i += 1
 	EndWhile
 
@@ -115,13 +111,6 @@ Function DrawStackPage()
 		stackToggleIDs[i] = AddToggleOption(Stack.items[i].GetName() + " (" + Stack.quantities[i] + ")", selected[i])
 		i = Stack.GetPreviousStackIndex(i)
 		iterations += 1
-	EndWhile
-
-	i = 0
-	While iterations < Stack.size
-		stackEmptyIDs[i] = AddEmptyOption()
-		iterations += 1
-		i += 1
 	EndWhile
 EndFunction
 
@@ -560,11 +549,6 @@ Event OnOptionHighlight(int option)
 		endif
 
 		SetInfoText(msg)
-	else
-		index = stackEmptyIDs.Find(option)
-		if index >= 0
-			SetInfoText("Empty stack slot.")
-		endif
 	endif
 EndEvent
 
