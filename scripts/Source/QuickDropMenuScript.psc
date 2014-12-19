@@ -147,15 +147,15 @@ EndState
 
 int[] Function GetSelectedIndices()
 	{Return an array of selected indices in top-down stack order. If not full, it is terminated with -1.}
-	int numSelected = 0
+	int index = 0
 	int[] selectedIndices = new int[10]
 
-	;Start from the current index and move down the stack to the bottom of the array.
+	;Start from the top index and move down the stack to the bottom of the array.
 	int i = selected.Rfind(True, Stack.top)
 	While i >= 0
-		selectedIndices[numSelected] = i
-		numSelected += 1
-		if i - 1 == -1	;Edge case: if Rfind returns 0, then our next Rfind would be from index 0 - 1 = -1 (the end of the array), and we enter an infinite loop.
+		selectedIndices[index] = i
+		index += 1
+		if i == 0	;Edge case: if Rfind returns 0, then our next Rfind would be from index 0 - 1 = -1 (the end of the array), and we enter an infinite loop.
 			i = -1
 		else
 			i = selected.Rfind(True, i - 1)
@@ -165,14 +165,14 @@ int[] Function GetSelectedIndices()
 	;Wrap around to the top of the array and search back down the stack to the current index.
 	i = selected.Rfind(True)
 	While i > Stack.top
-		selectedIndices[numSelected] = i
-		numSelected += 1
+		selectedIndices[index] = i
+		index += 1
 		i = selected.Rfind(True, i - 1)
 	EndWhile
 
 	;If we haven't filled selectedIndices, terminate it with -1.
-	if numSelected < selectedIndices.Length
-		selectedIndices[numSelected] = -1
+	if index < selectedIndices.Length
+		selectedIndices[index] = -1
 	endif
 
 	return selectedIndices
@@ -261,7 +261,7 @@ EndState
 
 Function Remove(int index)
 	{Remove the given stack index. Wrapper around Stack.Remove that additionally handles removing menu selection data.}
-	Stack.Remove(index)
+	int tempIndex = index
 
 	While index != Stack.top
 		int nextIndex = Stack.GetNextStackIndex(index)
@@ -269,6 +269,9 @@ Function Remove(int index)
 		index = nextIndex
 	EndWhile
 
+	Stack.Remove(tempIndex)
+
+	numSelected -= 1
 	selected[index] = False
 EndFunction
 
@@ -420,7 +423,7 @@ EndFunction
 int Function MoveDownFlag()
 	{Calculate the current flag value for the Move Down option.}
 	if numSelected == 1
-		i = Stack.GetPreviousStackIndex(selected.Find(True))
+		int i = Stack.GetPreviousStackIndex(selected.Find(True))
 		if i != Stack.top && Stack.items[i] != None
 			return OPTION_FLAG_NONE
 		endif
