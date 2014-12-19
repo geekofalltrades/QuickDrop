@@ -17,6 +17,8 @@ int[] stackToggleIDs
 bool[] selected
 int numSelected
 
+string[] yesOrNo
+
 Event OnConfigInit()
 	{Perform menu setup.}
 	Pages = new string[4]
@@ -24,6 +26,10 @@ Event OnConfigInit()
 	Pages[1] = "General Settings"
 	Pages[2] = "Pickup/Drop"
 	Pages[3] = "Replace"
+
+	yesOrNo = new string[2]
+	yesOrNo[0] = "Yes"
+	yesOrNo[1] = "No"
 EndEvent
 
 Event OnPageReset(string page)
@@ -564,6 +570,9 @@ Function DrawGeneralSettingsPage()
 	AddSliderOptionST("MaxRemembered", "Items Remembered", Stack.size, "{0}")
 	AddTextOptionST("ForgetOnRemoved", "When Items Removed", ForgetOnRemovedBoolToString(QuickDropQuest.forgetOnRemoved))
 	AddTextOptionST("ToggleRemembering", "Toggle Remembering", ToggleRememberingStateToString())
+	AddEmptyOption()
+	AddHeaderOption("Commands")
+	AddTextOptionST("ClearAllLocations", "Clear Remembered Location Data", "")
 EndFunction
 
 bool Function CheckKeyConflict(string conflictControl, string conflictName)
@@ -777,6 +786,39 @@ State ToggleRemembering
 
 	Event OnHighlightST()
 		SetInfoText("While on, QuickDrop will remember new items that are added to your inventory.\nTurn off to freeze your stack of remembered items.\nCan be toggled in-game with the \"Toggle Remembering\" hotkey.")
+	EndEvent
+EndState
+
+State ClearAllLocations
+	Event OnSelectST()
+		int i = Stack.top
+		int iterations = 0
+		While iterations < Stack.depth
+			if Stack.HasWorldLocation(i)
+				Stack.locations[i].Delete()
+			endif
+			Stack.locations[i] = None
+			i = Stack.GetPreviousStackIndex(i)
+			iterations += 1
+		EndWhile
+
+		if QuickDropQuest.locationXMarker != None
+			QuickDropQuest.locationXMarker.Delete()
+		endif
+		QuickDropQuest.LocationXMarker = None
+
+		QuickDropQuest.rememberContainer = False
+		QuickDropQuest.replaceInContainer = False
+		QuickDropQuest.rememberWorldLocation = False
+		QuickDropQuest.replaceInWorld = False
+
+		CrosshairScript.GoToState("Disabled")
+
+		SetTextOptionValueST("Done")
+	EndEvent
+
+	Event OnHighlightST()
+		SetInfoText("Clear all remembered containers and world locations. This information is not recoverable.\nThis command also switches off remembering and replacing to containers/the world.\nRun this command before uninstalling QuickDrop to ensure that all persisted location data is cleared.")
 	EndEvent
 EndState
 
