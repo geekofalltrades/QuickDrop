@@ -34,6 +34,13 @@ EndEvent
 
 Event OnPageReset(string page)
 	{Draw the menu.}
+	if page == ""
+		LoadCustomContent("QuickDrop_MCM.dds", 120, 95)
+		return
+	else
+		UnloadCustomContent()
+	endif
+
 	SetCursorFillMode(TOP_TO_BOTTOM)
 	if page == "Stack"
 		DrawStackPage()
