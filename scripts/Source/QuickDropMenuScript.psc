@@ -22,14 +22,14 @@ string[] yesOrNo
 Event OnConfigInit()
 	{Perform menu setup.}
 	Pages = new string[4]
-	Pages[0] = "Stack"
-	Pages[1] = "General Settings"
-	Pages[2] = "Pickup/Drop"
-	Pages[3] = "Replace"
+	Pages[0] = "$Stack"
+	Pages[1] = "$General Settings"
+	Pages[2] = "$Pickup/Drop"
+	Pages[3] = "$Replace"
 
 	yesOrNo = new string[2]
-	yesOrNo[0] = "Yes"
-	yesOrNo[1] = "No"
+	yesOrNo[0] = "$Yes"
+	yesOrNo[1] = "$No"
 EndEvent
 
 Event OnPageReset(string page)
@@ -42,13 +42,13 @@ Event OnPageReset(string page)
 	endif
 
 	SetCursorFillMode(TOP_TO_BOTTOM)
-	if page == "Stack"
+	if page == "$Stack"
 		DrawStackPage()
-	elseif page == "General Settings"
+	elseif page == "$General Settings"
 		DrawGeneralSettingsPage()
-	elseif page == "Pickup/Drop"
+	elseif page == "$Pickup/Drop"
 		DrawPickupDropPage()
-	elseif page == "Replace"
+	elseif page == "$Replace"
 		DrawReplacePage()
 	endif
 EndEvent
@@ -87,29 +87,29 @@ EndEvent
 
 Function DrawStackPage()
 	{Draw the "Stack" settings page.}
-	AddHeaderOption("Options")
-	AddTextOptionST("StackClearLocation", "Clear Locations From Selection", "", ClearLocationFlag())
+	AddHeaderOption("$Options")
+	AddTextOptionST("StackClearLocation", "$Clear Locations From Selection", "", ClearLocationFlag())
 
 	int keepDropFlagValue = KeepDropFlag()
-	AddTextOptionST("StackDropSelected", "Drop Selected", "", keepDropFlagValue)
-	AddTextOptionST("StackKeepSelected", "Keep Selected", "", keepDropFlagValue)
+	AddTextOptionST("StackDropSelected", "$Drop Selected", "", keepDropFlagValue)
+	AddTextOptionST("StackKeepSelected", "$Keep Selected", "", keepDropFlagValue)
 
-	AddTextOptionST("StackMoveUp", "Move Up", "", MoveUpFlag())
-	AddTextOptionST("StackMoveDown", "Move Down", "", MoveDownFlag())
-	AddTextOptionST("StackSwapSelected", "Swap", "", SwapFlag())
+	AddTextOptionST("StackMoveUp", "$Move Up", "", MoveUpFlag())
+	AddTextOptionST("StackMoveDown", "$Move Down", "", MoveDownFlag())
+	AddTextOptionST("StackSwapSelected", "$Swap", "", SwapFlag())
 
 	int combineFlagValue = CombineFlag()
-	AddTextOptionST("StackCombineUp", "Combine Up", "", combineFlagValue)
-	AddTextOptionST("StackCombineDown", "Combine Down", "", combineFlagValue)
+	AddTextOptionST("StackCombineUp", "$Combine Up", "", combineFlagValue)
+	AddTextOptionST("StackCombineDown", "$Combine Down", "", combineFlagValue)
 	AddEmptyOption()
 
 	AddHeaderOption("Selection")
-	AddTextOptionST("StackInvertSelection", "Invert Selection", "")
-	AddTextOptionST("StackSelectAll", "Select All", "")
-	AddTextOptionST("StackSelectNone", "Select None", "")
+	AddTextOptionST("StackInvertSelection", "$Invert Selection", "")
+	AddTextOptionST("StackSelectAll", "$Select All", "")
+	AddTextOptionST("StackSelectNone", "$Select None", "")
 
 	SetCursorPosition(1)
-	AddHeaderOption("Current Remembered Items")
+	AddHeaderOption("$Current Remembered Items")
 
 	int i = 0
 	While i < stackToggleIDs.Length
