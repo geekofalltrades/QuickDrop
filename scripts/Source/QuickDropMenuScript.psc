@@ -587,28 +587,28 @@ bool Function CheckKeyConflict(string conflictControl, string conflictName)
 	if conflictControl != ""
 		string msg = ""
 		if conflictName != ""
-			msg = "This key is already mapped to " + conflictControl + " from " + conflictName +".\nAre you sure you want to continue?"
+			msg = "$This key is already mapped to " + conflictControl + " $from " + conflictName +".\n$Are you sure you want to continue?"
 		else
-			msg = "This key is already mapped to " + conflictControl + " from Skyrim.\nAre you sure you want to continue?"
+			msg = "$This key is already mapped to " + conflictControl + " $from $Skyrim.\n$Are you sure you want to continue?"
 		endif
-		return ShowMessage(msg, True, "Yes", "No")
+		return ShowMessage(msg, True, "$Yes", "$No")
 	endif
 	return True
 EndFunction
 
 string Function GetCustomControl(int KeyCode)
 	if KeyCode == QuickDropQuest.toggleRememberingHotkey
-		return "Toggle Remembering"
+		return "$Toggle Remembering"
 	elseif KeyCode == QuickDropQuest.showHotkey
-		return "Show Current Item"
+		return "$Show Current Item"
 	elseif KeyCode == QuickDropQuest.dropHotKey
-		return "Drop Current Item"
+		return "$Drop Current Item"
 	elseif KeyCode == QuickDropQuest.keepHotKey
-		return "Keep Current Item"
+		return "$Keep Current Item"
 	elseif KeyCode == QuickDropQuest.dropAllHotkey
-		return "Drop All Items"
+		return "$Drop All Items"
 	elseif KeyCode == QuickDropQuest.keepAllHotkey
-		return "Keep All Items"
+		return "$Keep All Items"
 	endif
 	return ""
 EndFunction
