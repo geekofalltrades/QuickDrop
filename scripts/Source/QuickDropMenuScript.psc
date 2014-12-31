@@ -143,7 +143,7 @@ State StackClearLocation
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Clear any remembered world locations or containers from the selected item(s).\nThis clears persistent references, which can help free up memory and reduce savegame bloat.\nItem(s) will no longer be replaceable in the world or in containers. Can't be undone.")
+		SetInfoText("$STACK_CLEAR_LOCATION_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -194,7 +194,7 @@ State StackDropSelected
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Drop the selected item(s).")
+		SetInfoText("$STACK_DROP_SELECTED_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -212,7 +212,7 @@ State StackKeepSelected
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Keep the selected item(s).")
+		SetInfoText("$STACK_KEEP_SELECTED_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -233,7 +233,7 @@ State StackMoveUp
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Move the selected item(s) up one slot in the stack.")
+		SetInfoText("$STACK_MOVE_UP_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -245,7 +245,7 @@ State StackMoveDown
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Move the selected item(s) down one slot in the stack.")
+		SetInfoText("$STACK_MOVE_DOWN_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -257,7 +257,7 @@ State StackSwapSelected
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Swap the stack slots of the selected items.")
+		SetInfoText("$STACK_SWAP_SELECTED_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -294,7 +294,7 @@ State StackCombineUp
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Combine selected items of the same type in the top-most selected stack slot.\nThe world location or container data of the top-most slot is preserved.")
+		SetInfoText("$STACK_COMBINE_UP_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -322,7 +322,7 @@ State StackCombineDown
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Combine selected items of the same type in the bottom-most selected stack slot.\nThe world location or container data of the bottom-most slot is preserved.")
+		SetInfoText("$STACK_COMBINE_DOWN_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -342,7 +342,7 @@ State StackInvertSelection
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Unselect all selected items and select all unselected items.")
+		SetInfoText("$STACK_INVERT_SELECTION_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -362,7 +362,7 @@ State StackSelectAll
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Select all items.")
+		SetInfoText("$STACK_SELECT_ALL_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -382,7 +382,7 @@ State StackSelectNone
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Unselect all items.")
+		SetInfoText("$STACK_SELECT_NONE_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -534,29 +534,29 @@ Event OnOptionHighlight(int option)
 		string msg = Stack.items[index].GetName() + ".\n"
 
 		if Stack.quantities[index] == 1
-			msg += "Single item.\n"
+			msg += "$Single item.\n"
 		else
-			msg += "Stack of " + Stack.quantities[index] + " items.\n"
+			msg += "$Stack of " + Stack.quantities[index] + " $items.\n"
 		endif
 
 		if Stack.HasContainer(index)
-			msg += "From container."
+			msg += "$From container."
 			if QuickDropQuest.CanReplaceInContainer(index)
-				msg += " Can be replaced."
+				msg += " $Can be replaced."
 			else
-				msg += " Too far away to replace."
+				msg += " $Too far away to replace."
 			endif
 
 		elseif Stack.HasWorldLocation(index)
-			msg += "From world."
+			msg += "$From world."
 			if QuickDropQuest.CanReplaceInWorld(index)
-				msg += " Can be replaced."
+				msg += " $Can be replaced."
 			else
-				msg += " Too far away to replace."
+				msg += " $Too far away to replace."
 			endif
 
 		else
-			msg += "No location remembered."
+			msg += "$No location remembered."
 		endif
 
 		SetInfoText(msg)
