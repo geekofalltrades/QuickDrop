@@ -627,7 +627,7 @@ State ToggleRememberingHotkey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Toggle item remembering on and off. (Currently " + ToggleRememberingStateToString() + ".)\nWhen on, QuickDrop remembers new items as they're added to your inventory.\nWhen off, QuickDrop does not remember new items.")
+		SetInfoText("$TOGGLE_REMEMBERING_HOTKEY_HIGHLIGHT_1 ($Currently " + ToggleRememberingStateToString() ".)$TOGGLE_REMEMBERING_HOTKEY_HIGHLIGHT_2")
 	EndEvent
 EndState
 
@@ -645,7 +645,7 @@ State ShowHotkey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display the name of the current remembered item.")
+		SetInfoText("$SHOW_HOTKEY_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -663,7 +663,7 @@ State DropHotKey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Attempt to drop or replace the current remembered item and proceed to the next.")
+		SetInfoText("$DROP_HOTKEY_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -681,7 +681,7 @@ State KeepHotKey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Keep the current remembered item and proceed to the next.")
+		SetInfoText("$KEEP_HOTKEY_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -699,7 +699,7 @@ State DropAllHotkey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Attempt to drop or replace all remembered items.")
+		SetInfoText("$DROP_ALL_HOTKEY_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -717,7 +717,7 @@ State KeepAllHotkey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Keep all remembered items.")
+		SetInfoText("$KEEP_ALL_HOTKEY_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -740,15 +740,15 @@ State MaxRemembered
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Number of items to remember.\nThese form a stack of remembered items, with most recently picked up items on top.")
+		SetInfoText("$MAX_REMEMBERED_HIGHLIGHT")
 	EndEvent
 EndState
 
 string Function ForgetOnRemovedBoolToString(bool value)
 	if value
-		return "Forget First"
+		return "$Forget First"
 	else
-		return "Forget Last"
+		return "$Forget Last"
 	endif
 EndFunction
 
@@ -764,15 +764,15 @@ State ForgetOnRemoved
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("How to forget items in your stack when they're removed from your inventory outside of QuickDrop.\nForget First: Items are forgotten top-down as soon as they're removed, even if you have enough left to remember.\nForget Last: Items are forgotten bottom-up only once you don't have enough left to remember.")
+		SetInfoText("$FORGET_ON_REMOVED_HIGHLIGHT")
 	EndEvent
 EndState
 
 string Function ToggleRememberingStateToString()
 	if RememberScript.GetState() == "Enabled"
-		return "ON"
+		return "$On"
 	else
-		return "OFF"
+		return "$Off"
 	endif
 EndFunction
 
@@ -792,7 +792,7 @@ State ToggleRemembering
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("While on, QuickDrop will remember new items that are added to your inventory.\nTurn off to freeze your stack of remembered items.\nCan be toggled in-game with the \"Toggle Remembering\" hotkey.")
+		SetInfoText("$TOGGLE_REMEMBERING_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -821,11 +821,11 @@ State ClearAllLocations
 
 		CrosshairScript.GoToState("Disabled")
 
-		SetTextOptionValueST("Done")
+		SetTextOptionValueST("$Done")
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Clear all remembered containers and world locations. This information is not recoverable.\nThis command also switches off remembering and replacing to containers/the world.\nRun this command before uninstalling QuickDrop to ensure that all persisted location data is cleared.")
+		SetInfoText("$CLEAR_ALL_LOCATIONS_HIGHLIGHT")
 	EndEvent
 EndState
 
