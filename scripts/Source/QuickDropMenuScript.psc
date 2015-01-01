@@ -877,7 +877,7 @@ State PickUpBehaviorRememberAll
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("When item(s) are picked up, remember the item and the quantity picked up in one stack slot.\nItem(s) of the same type picked up separately occupy their own stack slots.")
+		SetInfoText("$PICKUP_BEHAVIOR_REMEMBER_ALL_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -900,8 +900,8 @@ State PickUpBehaviorRememberAllModifier
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("The maximum number of items to remember in one stack slot. 0 means no limit.\nItems beyond these overflow into a new stack slot.\n")
-	EndEvent
+		SetInfoText("$PICKUP_BEHAVIOR_REMEMBER_ALL_MODIFIER_HIGHLIGHT")
+		EndEvent
 EndState
 
 State PickUpBehaviorCollapseAll
@@ -914,8 +914,8 @@ State PickUpBehaviorCollapseAll
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("When item(s) are picked up, remember the item and the quantity picked up in one stack slot.\nItem(s) of the same type picked up separately are added to the same stack slot.\nThis shared stack slot is moved to the top of the stack whenever it's added to.")
-	EndEvent
+		SetInfoText("$PICKUP_BEHAVIOR_COLLAPSE_ALL_HIGHLIGHT")
+		EndEvent
 EndState
 
 State PickUpBehaviorCollapseAllModifier
@@ -937,7 +937,7 @@ State PickUpBehaviorCollapseAllModifier
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("The maximum number of items to remember in the combined stack slot. 0 means no limit.\nItems beyond these are not remembered.")
+		SetInfoText("$PICKUP_BEHAVIOR_COLLAPSE_ALL_MODIFIER_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -951,7 +951,7 @@ State PickUpBehaviorRememberEach
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("When item(s) are picked up, remember each one individually.\nOnly as many are remembered as will fit in your remembered items stack.")
+		SetInfoText("$PICKUP_BEHAVIOR_REMEMBER_EACH_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -974,7 +974,7 @@ State PickUpBehaviorRememberEachModifier
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("The maximum number of items to remember individually. 0 means no limit.")
+		SetInfoText("$PICKUP_BEHAVIOR_REMEMBER_EACH_MODIFIER_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -988,7 +988,7 @@ State PickUpBehaviorRememberSome
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("When item(s) are picked up, remember only some in one stack slot.\nThe rest go into your inventory without being remembered.")
+		SetInfoText("$PICKUP_BEHAVIOR_REMEMBER_SOME_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1011,7 +1011,7 @@ State PickUpBehaviorRememberSomeModifier
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("The maximum number of items to remember in one stack slot.\nItems beyond these are not remembered.")
+		SetInfoText("$PICKUP_BEHAVIOR_REMEMBER_SOME_MODIFIER_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1027,7 +1027,7 @@ State RememberPersistentItems
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Remember items with persistent references. This option allows QuickDrop to remember and drop quest items\nand some other items that might not normally be remembered. Use carefully - dropping quest items might break\nquest progression. Also consider setting the \"Persistent Items\" notification.")
+		SetInfoText("$REMEMBER_PERSISTENT_ITEMS_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1043,7 +1043,7 @@ State NotifyOnDrop
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item is dropped.")
+		SetInfoText("$NOTIFY_ON_DROP_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1059,7 +1059,7 @@ State NotifyOnKeep
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item is kept.")
+		SetInfoText("$NOTIFY_ON_KEEP_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1075,7 +1075,7 @@ State NotifyOnPersistent
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when an item picked up has a persistent reference.\nPersistence is a property of certain significant items, notably quest items.\nDropping these items with QuickDrop may break quest progression.")
+		SetInfoText("$NOFITY_ON_PERSISTENT_HIGHLIGHT")
 	EndEvent
 EndState
 
