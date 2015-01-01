@@ -103,7 +103,7 @@ Function DrawStackPage()
 	AddTextOptionST("StackCombineDown", "$Combine Down", "", combineFlagValue)
 	AddEmptyOption()
 
-	AddHeaderOption("Selection")
+	AddHeaderOption("$Selection")
 	AddTextOptionST("StackInvertSelection", "$Invert Selection", "")
 	AddTextOptionST("StackSelectAll", "$Select All", "")
 	AddTextOptionST("StackSelectNone", "$Select None", "")
