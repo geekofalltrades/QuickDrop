@@ -534,29 +534,29 @@ Event OnOptionHighlight(int option)
 		string msg = Stack.items[index].GetName() + ".\n"
 
 		if Stack.quantities[index] == 1
-			msg += "$Single item.\n"
+			msg += "Single item.\n"
 		else
-			msg += "$Stack of " + Stack.quantities[index] + " $items.\n"
+			msg += "Stack of " + Stack.quantities[index] + " items.\n"
 		endif
 
 		if Stack.HasContainer(index)
-			msg += "$From container."
+			msg += "From container."
 			if QuickDropQuest.CanReplaceInContainer(index)
-				msg += " $Can be replaced."
+				msg += " Can be replaced."
 			else
-				msg += " $Too far away to replace."
+				msg += " Too far away to replace."
 			endif
 
 		elseif Stack.HasWorldLocation(index)
-			msg += "$From world."
+			msg += "From world."
 			if QuickDropQuest.CanReplaceInWorld(index)
-				msg += " $Can be replaced."
+				msg += " Can be replaced."
 			else
-				msg += " $Too far away to replace."
+				msg += " Too far away to replace."
 			endif
 
 		else
-			msg += "$No location remembered."
+			msg += "No location remembered."
 		endif
 
 		SetInfoText(msg)
@@ -587,9 +587,9 @@ bool Function CheckKeyConflict(string conflictControl, string conflictName)
 	if conflictControl != ""
 		string msg = ""
 		if conflictName != ""
-			msg = "$This key is already mapped to " + conflictControl + " $from " + conflictName +".\n$Are you sure you want to continue?"
+			msg = "This key is already mapped to " + conflictControl + " from " + conflictName +".\nAre you sure you want to continue?"
 		else
-			msg = "$This key is already mapped to " + conflictControl + " $from $Skyrim.\n$Are you sure you want to continue?"
+			msg = "This key is already mapped to " + conflictControl + " from Skyrim.\nAre you sure you want to continue?"
 		endif
 		return ShowMessage(msg, True, "$Yes", "$No")
 	endif
@@ -598,17 +598,17 @@ EndFunction
 
 string Function GetCustomControl(int KeyCode)
 	if KeyCode == QuickDropQuest.toggleRememberingHotkey
-		return "$Toggle Remembering"
+		return "Toggle Remembering"
 	elseif KeyCode == QuickDropQuest.showHotkey
-		return "$Show Current Item"
+		return "Show Current Item"
 	elseif KeyCode == QuickDropQuest.dropHotKey
-		return "$Drop Current Item"
+		return "Drop Current Item"
 	elseif KeyCode == QuickDropQuest.keepHotKey
-		return "$Keep Current Item"
+		return "Keep Current Item"
 	elseif KeyCode == QuickDropQuest.dropAllHotkey
-		return "$Drop All Items"
+		return "Drop All Items"
 	elseif KeyCode == QuickDropQuest.keepAllHotkey
-		return "$Keep All Items"
+		return "Keep All Items"
 	endif
 	return ""
 EndFunction
