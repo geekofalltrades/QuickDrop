@@ -627,7 +627,7 @@ State ToggleRememberingHotkey
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("$TOGGLE_REMEMBERING_HOTKEY_HIGHLIGHT_1 ($Currently " + ToggleRememberingStateToString() ".)$TOGGLE_REMEMBERING_HOTKEY_HIGHLIGHT_2")
+		SetInfoText("$TOGGLE_REMEMBERING_HOTKEY_HIGHLIGHT_1 ($Currently " + ToggleRememberingStateToString() + ".)$TOGGLE_REMEMBERING_HOTKEY_HIGHLIGHT_2")
 	EndEvent
 EndState
 
