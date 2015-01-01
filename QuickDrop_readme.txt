@@ -72,10 +72,13 @@ CORRESPONDENCE: For general questions, comments, complaints, compliments, musing
 THANKS to Nexus Mods and to all contributors to the Creation Kit wiki and forums.
 
 CHANGELOG:
+  v2.1:
+    * Added localization support.
   v2.0:
     * Fixed bug in case when "Remembered Items" slider was opened and closed with value of 10 and all stack slots
       full.
     * Implemented the forgetting of items when those items were removed from your inventory outside of QuickDrop.
+    * Added option to remember items of the same type in one slot.
     * Added the ability to toggle remembering of items on and off, both in-menu and with a hotkey.
     * Added the ability to remember items with persistent references.
     * Added the abilities to replace items in the world and in their original containers, plus accompanying
