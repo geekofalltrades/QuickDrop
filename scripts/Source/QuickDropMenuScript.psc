@@ -1111,7 +1111,7 @@ State ReplaceInContainer
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("If the item(s) dropped came from a container, replace them in that container.\nThis makes containers into persistent references, which causes some script/savegame bloat.")
+		SetInfoText("$REPLACE_IN_CONTAINER_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1134,7 +1134,7 @@ State ReplaceInContainerDistance
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("The maximum distance from which you can replace items in their original containers.\n0 means from any distance.")
+		SetInfoText("$REPLACE_IN_CONTAINER_DISTANCE_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1150,7 +1150,7 @@ State ReplaceInContainerDropOnFail
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("If the current item(s) can't be replaced in their containers, drop them instead.")
+		SetInfoText("$REPLACE_IN_CONTAINER_DROP_ON_FAIL_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1166,7 +1166,7 @@ State RememberContainer
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Always remember the container item(s) came from, even if \"Replace In Container\" is disabled.\nThis allows you to replace items in containers even if \"Replace In Container\" wasn't enabled when you picked them up.\nThis makes containers into persistent references, which causes some script/savegame bloat.")
+		SetInfoText("$REMEMBER_CONTAINER_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1184,7 +1184,7 @@ State ReplaceInWorld
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("If the item(s) dropped came from the world, replace them at their original location.\nThis creates persistent references, which causes some script/savegame bloat.")
+		SetInfoText("$REPLACE_IN_WORLD_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1207,7 +1207,7 @@ State ReplaceInWorldDistance
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("The maximum distance from which you can replace items in their original world locations.\n0 means from any distance.")
+		SetInfoText("$REPLACE_IN_WORLD_DISTANCE_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1223,7 +1223,7 @@ State ReplaceInWorldDropOnFail
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("If the current item(s) can't be replaced in their original world locations, drop them instead.")
+		SetInfoText("$REPLACE_IN_WORLD_DROP_ON_FAIL_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1241,7 +1241,7 @@ State RememberWorldLocation
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Always remember the world location item(s) came from, even if \"Replace In World\" is disabled.\nThis allows you to replace items in the world even if \"Replace In World\" wasn't enabled when you picked them up.\nThis creates persistent references, which causes some script/savegame bloat.")
+		SetInfoText("$REMEMBER_WORLD_LOCATION_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1257,7 +1257,7 @@ State NotifyOnReplaceInContainer
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item(s) are replaced in their original container.")
+		SetInfoText("$NOTIFY_ON_REPLACE_IN_CONTAINER_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1273,7 +1273,7 @@ State NotifyOnFailToReplaceInContainer
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item(s) can't be replaced in their original container.")
+		SetInfoText("$NOTIFY_ON_FAIL_TO_REPLACE_IN_CONTAINER_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1289,7 +1289,7 @@ State NotifyOnReplaceInWorld
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item(s) are replaced in their original world location.")
+		SetInfoText("$NOTIFY_ON_REPLACE_IN_WORLD_HIGHLIGHT")
 	EndEvent
 EndState
 
@@ -1305,6 +1305,6 @@ State NotifyOnFailToReplaceInWorld
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("Display a message when the current item(s) can't be replaced in their original world location.")
+		SetInfoText("$NOTIFY_ON_FAIL_TO_REPLACE_IN_WORLD_HIGHLIGHT")
 	EndEvent
 EndState
