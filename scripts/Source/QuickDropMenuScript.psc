@@ -1075,7 +1075,7 @@ State NotifyOnPersistent
 	EndEvent
 
 	Event OnHighlightST()
-		SetInfoText("$NOFITY_ON_PERSISTENT_HIGHLIGHT")
+		SetInfoText("$NOTIFY_ON_PERSISTENT_HIGHLIGHT")
 	EndEvent
 EndState
 
