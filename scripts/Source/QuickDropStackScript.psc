@@ -537,23 +537,18 @@ int Function Rfind(Form query, int index = -10)
 EndFunction
 
 Function Align()
-	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property.}
+	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property. The stack arrays are resized if needed.}
+	Form[] oldItems = items
+	int[] oldQuantities = quantities
+	ObjectReference oldLocations = locations
+
+	_Allocate(size)
+
 	if !depth		;If the stack is empty.
 		top = items.Length - 1	;Reset top so the next item remembered is at 0.
 
 	else	;If we have at least one item remembered.
-		Form[] newItems = new Form[10]		;Build new, aligned stack arrays.
-		int[] newQuantities = new int[10]
-		ObjectReference[] newLocations = new ObjectReference[10]
-
-		int i = 0
-		While i < newItems.Length
-			newItems[i] = None
-			newQuantities[i] = 0
-			newLocations[i] = None
-			i += 1
-		EndWhile
-
+		int i
 		if depth >= size	;If the currently occupied slots match or overflow the stack size.
 			i = size - 1		;Then we start our stack at the highest allowed position.
 			depth = size
@@ -563,16 +558,13 @@ Function Align()
 
 		int j = top
 		While i >= 0
-			newItems[i] = items[j]
-			newQuantities[i] = quantities[j]
-			newLocations[i] = locations[j]
+			items[i] = oldItems[j]
+			quantities[i] = oldQuantities[j]
+			locations[i] = oldLocations[j]
 			j = GetPreviousStackIndex(j)
 			i -= 1
 		EndWhile
 
-		items = newItems
-		quantities = newQuantities
-		locations = newLocations
 		top = depth - 1
 	endif
 EndFunction
