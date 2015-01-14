@@ -134,6 +134,10 @@ Function Allocate(int size)
 	{Do not allocate while not Ready.}
 EndFunction
 
+Function Align()
+	{Do not align while not Ready.}
+EndFunction
+
 Auto State Ready
 	;In Ready state, state-dependent entry points into the stack are available to callers.
 	;These are driver functions that call underlying workhorse functions, so that the empty-state
@@ -230,6 +234,13 @@ Auto State Ready
 		_Allocate(size)
 		GoToState("Ready")
 	EndFunction
+
+	Function Align()
+		{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property. The stack arrays are resized if needed.}
+		GoToState("Working")
+		_Align()
+		GoToState("Ready")
+	EndFunction
 EndState
 
 Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
@@ -293,7 +304,7 @@ Function _SetSize(int newSize)
 	{Set a new size and align the stack.}
 	if newSize != size    ;If the size of the stack is actually changing.
 		size = newSize
-		Align()
+		_Align()
 	endif
 EndFunction
 
@@ -456,6 +467,39 @@ Function _Allocate(int numElements)
 	EndWhile
 EndFunction
 
+Function _Align()
+	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property. The stack arrays are resized if needed.}
+	Form[] oldItems = items
+	int[] oldQuantities = quantities
+	ObjectReference oldLocations = locations
+
+	_Allocate(size)
+
+	if !depth		;If the stack is empty.
+		top = items.Length - 1	;Reset top so the next item remembered is at 0.
+
+	else	;If we have at least one item remembered.
+		int i
+		if depth >= size	;If the currently occupied slots match or overflow the stack size.
+			i = size - 1		;Then we start our stack at the highest allowed position.
+			depth = size
+		else				;If the currently occupied slots don't fill the new limit.
+			i = depth - 1		;Then we start our stack as high as needed to accomodate all slots.
+		endif
+
+		int j = top
+		While i >= 0
+			items[i] = oldItems[j]
+			quantities[i] = oldQuantities[j]
+			locations[i] = oldLocations[j]
+			j = GetPreviousStackIndex(j)
+			i -= 1
+		EndWhile
+
+		top = depth - 1
+	endif
+EndFunction
+
 bool Function HasContainer(int index = -1)
 	{Whether or not container data is stored at the given index.}
 	if index == -1
@@ -534,37 +578,4 @@ int Function Rfind(Form query, int index = -10)
 	endif
 
 	return i
-EndFunction
-
-Function Align()
-	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property. The stack arrays are resized if needed.}
-	Form[] oldItems = items
-	int[] oldQuantities = quantities
-	ObjectReference oldLocations = locations
-
-	_Allocate(size)
-
-	if !depth		;If the stack is empty.
-		top = items.Length - 1	;Reset top so the next item remembered is at 0.
-
-	else	;If we have at least one item remembered.
-		int i
-		if depth >= size	;If the currently occupied slots match or overflow the stack size.
-			i = size - 1		;Then we start our stack at the highest allowed position.
-			depth = size
-		else				;If the currently occupied slots don't fill the new limit.
-			i = depth - 1		;Then we start our stack as high as needed to accomodate all slots.
-		endif
-
-		int j = top
-		While i >= 0
-			items[i] = oldItems[j]
-			quantities[i] = oldQuantities[j]
-			locations[i] = oldLocations[j]
-			j = GetPreviousStackIndex(j)
-			i -= 1
-		EndWhile
-
-		top = depth - 1
-	endif
 EndFunction
