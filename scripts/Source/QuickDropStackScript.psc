@@ -130,6 +130,10 @@ Function ClearBuffers()
 	{Do not clear buffers while not Ready.}
 EndFunction
 
+Function Allocate(int size)
+	{Do not allocate while not Ready.}
+EndFunction
+
 Auto State Ready
 	;In Ready state, state-dependent entry points into the stack are available to callers.
 	;These are driver functions that call underlying workhorse functions, so that the empty-state
@@ -217,6 +221,13 @@ Auto State Ready
 		{Clear all stack buffers.}
 		GoToState("Working")
 		_ClearBuffers()
+		GoToState("Ready")
+	EndFunction
+
+	Function Allocate(int size)
+		{Allocate new stack arrays that will provide enough space for a stack of the given size. Back up existing stack arrays before calling this function!}
+		GoToState("Working")
+		_Allocate(size)
 		GoToState("Ready")
 	EndFunction
 EndState
@@ -359,6 +370,90 @@ Function _ClearBuffers()
 	{Clear all stack buffers.}
 	itemBuffer = None
 	quantityBuffer = 0
+EndFunction
+
+Function _Allocate(int numElements)
+	{Allocate new stack arrays that will provide enough space for a stack of the given numElements. Back up existing stack arrays before calling this function!}
+	;Allocate stack arrays in increments of 8 elements, up to the maximum of 128.
+	;This seems like a reasonable tradeoff between granularity and memory usage and ridiculous if-else code.
+	if numElements > 120
+		items = new Form[128]
+		quantities = new int[128]
+		locations = new ObjectReference[128]
+	elseif numElements > 112
+		items = new Form[120]
+		quantities = new int[120]
+		locations = new ObjectReference[120]
+	elseif numElements > 104
+		items = new Form[112]
+		quantities = new int[112]
+		locations = new ObjectReference[112]
+	elseif numElements > 96
+		items = new Form[104]
+		quantities = new int[104]
+		locations = new ObjectReference[104]
+	elseif numElements > 88
+		items = new Form[96]
+		quantities = new int[96]
+		locations = new ObjectReference[96]
+	elseif numElements > 80
+		items = new Form[88]
+		quantities = new int[88]
+		locations = new ObjectReference[88]
+	elseif numElements > 72
+		items = new Form[80]
+		quantities = new int[80]
+		locations = new ObjectReference[80]
+	elseif numElements > 64
+		items = new Form[72]
+		quantities = new int[72]
+		locations = new ObjectReference[72]
+	elseif numElements > 56
+		items = new Form[64]
+		quantities = new int[64]
+		locations = new ObjectReference[64]
+	elseif numElements > 48
+		items = new Form[56]
+		quantities = new int[56]
+		locations = new ObjectReference[56]
+	elseif numElements > 40
+		items = new Form[48]
+		quantities = new int[48]
+		locations = new ObjectReference[48]
+	elseif numElements > 32
+		items = new Form[40]
+		quantities = new int[40]
+		locations = new ObjectReference[40]
+	elseif numElements > 24
+		items = new Form[32]
+		quantities = new int[32]
+		locations = new ObjectReference[32]
+	elseif numElements > 16
+		items = new Form[24]
+		quantities = new int[24]
+		locations = new ObjectReference[24]
+	elseif numElements > 8
+		items = new Form[16]
+		quantities = new int[16]
+		locations = new ObjectReference[16]
+	elseif numElements > 0
+		items = new Form[8]
+		quantities = new int[8]
+		locations = new ObjectReference[8]
+	else
+		;This is the closest we can come to deallocating these arrays.
+		items = new Form[1]
+		quantities = new int[1]
+		locations = new ObjectReference[1]
+	endif
+
+	int i = 0
+	While i < items.Length
+		items[i] = None
+		quantities[i] = 0
+		locations[i] = None
+		i += 1
+	EndWhile
 EndFunction
 
 bool Function HasContainer(int index = -1)
