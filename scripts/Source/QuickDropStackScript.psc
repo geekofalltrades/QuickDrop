@@ -61,18 +61,8 @@ Form[] duplicates
 
 Event OnInit()
 	{Perform script setup.}
-	items = new Form[10]
-	quantities = new int[10]
-	locations = new ObjectReference[10]
+	Allocate(size)
 	duplicates = new Form[1]	;Placeholder array.
-
-	int i = 0
-	While i < items.Length
-		items[i] = None
-		quantities[i] = 0
-		locations[i] = None
-		i += 1
-	EndWhile
 EndEvent
 
 State Working
