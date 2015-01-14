@@ -471,7 +471,7 @@ Function _Align()
 	{Align the stack with the arrays, so that the bottom item on the stack is at the array's 0 index. The stack is aligned according to the size property. The stack arrays are resized if needed.}
 	Form[] oldItems = items
 	int[] oldQuantities = quantities
-	ObjectReference oldLocations = locations
+	ObjectReference[] oldLocations = locations
 
 	_Allocate(size)
 
