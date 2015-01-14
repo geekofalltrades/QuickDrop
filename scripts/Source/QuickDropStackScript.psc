@@ -262,7 +262,7 @@ Function _Pop()
 	{Pop an item from the stack. The item is not returned.}
 
 	;If we have world location data stored at the top index.
-	if locations[top] != None && locations[top].GetBaseObject() == XMarker
+	if HasWorldLocation()
 		locations[top].Delete()	;Mark the XMarker for deletion.
 	endif
 
@@ -278,7 +278,7 @@ Function _Remove(int index, bool del = True)
 	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
 
 	;If we have world location data stored at the index being removed and we want to delete it.
-	if del && locations[index] != None && locations[index].GetBaseObject() == XMarker
+	if del && HasWorldLocation(index)
 		locations[index].Delete()	;Mark the XMarker for deletion.
 	endif
 
