@@ -37,12 +37,6 @@ int[] Property quantities Auto
 ObjectReference[] Property locations Auto
 {The world location or container the corresponding item came from, or None if no location data is remembered.}
 
-Form Property itemBuffer = None Auto
-{Contains the item we most recently pushed, popped, or removed, so that it can be accessed for notifications.}
-
-int Property quantityBuffer = 0 Auto
-{Contains the quantity we most recently pushed, popped, or removed, so that it can be accessed for notifications.}
-
 ;Start top at 9 so that the first call to Push sets it back to 0.
 int Property top = 9 Auto
 {The index representing the top of the stack.}
@@ -56,15 +50,11 @@ int Property depth = 0 Auto
 Static Property XMarker Auto
 {An XMarker, of the type used to mark world locations. Needed in this script for comparison operations.}
 
-Form[] duplicates
-;An array containing items that are duplicated in this stack.
-
 Event OnInit()
 	{Perform script setup.}
 	items = new Form[10]
 	quantities = new int[10]
 	locations = new ObjectReference[10]
-	duplicates = new Form[1]	;Placeholder array.
 
 	int i = 0
 	While i < items.Length
@@ -76,8 +66,8 @@ Event OnInit()
 EndEvent
 
 State Working
-	;Disallow access by other threads when state-altering actions are
-	;taking place. The following empty prototypes are all state-altering
+	;Disallow access by other threads when state-dependent actions are
+	;taking place. The following empty prototypes are all state-dependent
 	;methods of the stack that must be thread-locked.
 EndState
 
@@ -103,31 +93,6 @@ EndFunction
 
 Function MoveToTop(int index)
 	{Don't move to the top while not Ready.}
-EndFunction
-
-Function RecordDuplicates()
-	{Don't record duplicate items while not Ready.}
-EndFunction
-
-Function ClearDuplicates()
-	{Don't clear duplicate items while not Ready.}
-EndFunction
-
-bool Function HasDuplicate(Form query)
-	{Always assume no duplication while not Ready.}
-	return False
-EndFunction
-
-Function RemoveDuplicate(Form query)
-	{Don't remove duplicate records while not Ready.}
-EndFunction
-
-Function BufferIndex(int index)
-	{Do not set buffers while not Ready.}
-EndFunction
-
-Function ClearBuffers()
-	{Do not clear buffers while not Ready.}
 EndFunction
 
 Auto State Ready
@@ -174,49 +139,6 @@ Auto State Ready
 		{Remove the item at the given index, pushing others down into its place, then place it on the top of the stack.}
 		GoToState("Working")
 		_MoveToTop(index)
-		GoToState("Ready")
-	EndFunction
-
-	Function RecordDuplicates()
-		{Record duplicated items in the duplicates array.}
-		GoToState("Working")
-		_RecordDuplicates()
-		GoToState("Ready")
-	EndFunction
-
-	Function ClearDuplicates()
-		{Clear the duplicated items.}
-		GoToState("Working")
-		_ClearDuplicates()
-		GoToState("Ready")
-	EndFunction
-
-	bool Function HasDuplicate(Form query)
-		{Check whether the given form is recorded as a duplicate.}
-		GoToState("Working")
-		bool duplicate = _HasDuplicate(query)
-		GoToState("Ready")
-		return duplicate
-	EndFunction
-
-	Function RemoveDuplicate(Form query)
-		{Remove the record of this form in duplicates, if it exists.}
-		GoToState("Working")
-		_RemoveDuplicate(query)
-		GoToState("Ready")
-	EndFunction
-
-	Function BufferIndex(int index)
-		{Buffer the given index.}
-		GoToState("Working")
-		_BufferIndex(index)
-		GoToState("Ready")
-	EndFunction
-
-	Function ClearBuffers()
-		{Clear all stack buffers.}
-		GoToState("Working")
-		_ClearBuffers()
 		GoToState("Ready")
 	EndFunction
 EndState
@@ -310,55 +232,6 @@ Function _MoveToTop(int index)
 
 	_Remove(index, False)
 	_Push(tempItem, tempQuantity, tempLocation)
-EndFunction
-
-Function _RecordDuplicates()
-	{Record duplicated items in the duplicates array.}
-
-	;The most space we will ever need to record duplicate items is N/2, where N is the Length of the items array.
-	;This is the case in which the stack is full and every item is duplicated exactly one time.
-	duplicates = new Form[5]
-
-	int duplicateIndex = 0
-	int i = 0
-	While i < items.Length - 1
-		if items[i] != None && items.Find(items[i], i + 1) >= 0 && duplicates.Find(items[i]) < 0
-			duplicates[duplicateIndex] = items[i]
-			duplicateIndex += 1
-		endif
-		i += 1
-	EndWhile
-EndFunction
-
-Function _ClearDuplicates()
-	{Clear the duplicated items.}
-	;Papyrus can't actually deallocate arrays. Creating a new array of length 1 will get the other array garbage collected, though.
-	duplicates = new Form[1]
-EndFunction
-
-bool Function _HasDuplicate(Form query)
-	{Check whether the given form is recorded as a duplicate.}
-	return duplicates.Find(query) >= 0
-EndFunction
-
-Function _RemoveDuplicate(Form query)
-	{Remove the record of this form in duplicates, if it exists.}
-	int index = duplicates.Find(query)
-	if index >= 0
-		duplicates[index] = None
-	endif
-EndFunction
-
-Function _BufferIndex(int index)
-	{Buffer the given index.}
-	itemBuffer = items[index]
-	quantityBuffer = quantities[index]
-EndFunction
-
-Function _ClearBuffers()
-	{Clear all stack buffers.}
-	itemBuffer = None
-	quantityBuffer = 0
 EndFunction
 
 bool Function HasContainer(int index = -1)
