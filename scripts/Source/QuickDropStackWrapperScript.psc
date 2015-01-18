@@ -36,7 +36,7 @@ Function Pop()
 	{Disallow popping while not Ready.}
 EndFunction
 
-Function Remove(int index)
+Function Remove(int index, bool del = True)
 	{Disallow removing while not Ready.}
 EndFunction
 
@@ -84,10 +84,10 @@ Auto State Ready
 		GoToState("Ready")
 	EndFunction
 
-	Function Remove(int index)
+	Function Remove(int index, bool del = True)
 		{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
 		GoToState("Working")
-		_Remove(index)
+		_Remove(index, del)
 		GoToState("Ready")
 	EndFunction
 
@@ -137,7 +137,7 @@ EndState
 
 Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
 	{Push a new item onto the stack.}
-	Parent._Push(itemToRemember, quantityToRemember, locationToRemember)
+	Parent.Push(itemToRemember, quantityToRemember, locationToRemember)
 	_BufferIndex(top)
 EndFunction
 
@@ -151,7 +151,7 @@ Function _Pop()
 
 	_BufferIndex(top)
 
-	Parent._Pop()
+	Parent.Pop()
 EndFunction
 
 Function _Remove(int index, bool del = True)
@@ -164,7 +164,7 @@ Function _Remove(int index, bool del = True)
 
 	_BufferIndex(index)
 
-	Parent._Remove(index, del)
+	Parent.Remove(index, del)
 EndFunction
 
 Function _RecordDuplicates()

@@ -68,18 +68,6 @@ State Working
 	;methods of the stack that must be thread-locked.
 EndState
 
-Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
-	{Disallow pushing while not Ready.}
-EndFunction
-
-Function Pop()
-	{Disallow popping while not Ready.}
-EndFunction
-
-Function Remove(int index)
-	{Disallow removing while not Ready.}
-EndFunction
-
 Function SetSize(int newSize)
 	{Don't adjust the size of the stack while not Ready.}
 EndFunction
@@ -96,27 +84,6 @@ Auto State Ready
 	;In Ready state, state-dependent entry points into the stack are available to callers.
 	;These are driver functions that call underlying workhorse functions, so that the empty-state
 	;workhorse methods can reliably be called by other internal stack methods.
-
-	Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
-		{Push a new item onto the stack.}
-		GoToState("Working")
-		_Push(itemToRemember, quantityToRemember, locationToRemember)
-		GoToState("Ready")
-	EndFunction
-
-	Function Pop()
-		{Pop an item from the stack. The item is not returned.}
-		GoToState("Working")
-		_Pop()
-		GoToState("Ready")
-	EndFunction
-
-	Function Remove(int index)
-		{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
-		GoToState("Working")
-		_Remove(index)
-		GoToState("Ready")
-	EndFunction
 
 	Function SetSize(int newSize)
 		{Set a new size and align the stack.}
@@ -139,45 +106,6 @@ Auto State Ready
 		GoToState("Ready")
 	EndFunction
 EndState
-
-Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
-	{Push a new item onto the stack.}
-	top = GetNextStackIndex(top)
-
-	if items[top] == None
-		depth += 1	;Unless we're overwriting an item, add 1 to depth.
-	endif
-
-	items[top] = itemToRemember
-	quantities[top] = quantityToRemember
-	locations[top] = locationToRemember
-EndFunction
-
-Function _Pop()
-	{Pop an item from the stack. The item is not returned.}
-	items[top] = None
-	locations[top] = None
-	top = GetPreviousStackIndex(top)
-	depth -= 1
-EndFunction
-
-Function _Remove(int index, bool del = True)
-	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
-	;Shift stack down, overwriting this index.
-	While index != top
-		int nextIndex = GetNextStackIndex(index)
-		items[index] = items[nextIndex]
-		quantities[index] = quantities[nextIndex]
-		locations[index] = locations[nextIndex]
-		index = nextIndex
-	EndWhile
-
-	;Clear the top item of the stack.
-	items[top] = None
-	locations[top] = None
-	top = GetPreviousStackIndex(top)
-	depth -= 1
-EndFunction
 
 Function _SetSize(int newSize)
 	{Set a new size and align the stack.}
@@ -209,8 +137,51 @@ Function _MoveToTop(int index)
 	int tempQuantity = quantities[index]
 	ObjectReference tempLocation = locations[index]
 
-	_Remove(index, False)
-	_Push(tempItem, tempQuantity, tempLocation)
+	Remove(index, False)
+	Push(tempItem, tempQuantity, tempLocation)
+EndFunction
+
+Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+	{Push a new item onto the stack.}
+	;This method is thread-locked from the QuickDropStackWrapperScript.
+	top = GetNextStackIndex(top)
+
+	if items[top] == None
+		depth += 1	;Unless we're overwriting an item, add 1 to depth.
+	endif
+
+	items[top] = itemToRemember
+	quantities[top] = quantityToRemember
+	locations[top] = locationToRemember
+EndFunction
+
+Function Pop()
+	{Pop an item from the stack. The item is not returned.}
+	;This method is thread-locked from the QuickDropStackWrapperScript.
+	items[top] = None
+	locations[top] = None
+	top = GetPreviousStackIndex(top)
+	depth -= 1
+EndFunction
+
+Function Remove(int index, bool del = True)
+	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
+	;This method is thread-locked from the QuickDropStackWrapperScript.
+
+	;Shift stack down, overwriting this index.
+	While index != top
+		int nextIndex = GetNextStackIndex(index)
+		items[index] = items[nextIndex]
+		quantities[index] = quantities[nextIndex]
+		locations[index] = locations[nextIndex]
+		index = nextIndex
+	EndWhile
+
+	;Clear the top item of the stack.
+	items[top] = None
+	locations[top] = None
+	top = GetPreviousStackIndex(top)
+	depth -= 1
 EndFunction
 
 int Function GetNextStackIndex(int index)
