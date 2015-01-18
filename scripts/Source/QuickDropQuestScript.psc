@@ -10,7 +10,7 @@ QuickDropPlayerRememberScript Property RememberScript Auto
 QuickDropPlayerCrosshairScript Property CrosshairScript Auto
 {The player script responsible for tracking OnCrosshairRefChanged events.}
 
-QuickDropStackScript Property Stack Auto
+QuickDropStackWrapperScript Property Stack Auto
 {The QuickDrop stack.}
 
 Actor Property PlayerRef Auto

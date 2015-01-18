@@ -4,7 +4,7 @@ Scriptname QuickDropMenuScript extends SKI_ConfigBase
 QuickDropQuestScript Property QuickDropQuest Auto
 {The main quest script.}
 
-QuickDropStackScript Property Stack Auto
+QuickDropStackWrapperScript Property Stack Auto
 {The stack script.}
 
 QuickDropPlayerRememberScript Property RememberScript Auto
