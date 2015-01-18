@@ -11,6 +11,9 @@ Form Property itemBuffer = None Auto
 int Property quantityBuffer = 0 Auto
 {Contains the quantity we most recently pushed, popped, or removed, so that it can be accessed for notifications.}
 
+Static Property XMarker Auto
+{An XMarker, of the type used to mark world locations. Needed in this script for comparison operations.}
+
 Form[] duplicates
 ;An array that tracks whether items are duplicated in the wrapped stack.
 ;For use with the Remember to One Slot pickup functionality.
@@ -24,6 +27,18 @@ State Working
 	;taking place. The following empty prototypes are all state-dependent
 	;methods of the stack wrapper that must be thread-locked.
 EndState
+
+Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+	{Disallow pushing while not Ready.}
+EndFunction
+
+Function Pop()
+	{Disallow popping while not Ready.}
+EndFunction
+
+Function Remove(int index)
+	{Disallow removing while not Ready.}
+EndFunction
 
 Function RecordDuplicates()
 	{Don't record duplicate items while not Ready.}
@@ -54,6 +69,28 @@ Auto State Ready
 	;In Ready state, state-dependent entry points into the stack wrapper are available to callers.
 	;These are driver functions that call underlying workhorse functions, so that the empty-state
 	;workhorse methods can reliably be called by other internal stack wrapper methods.
+
+	Function Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+		{Push a new item onto the stack.}
+		GoToState("Working")
+		_Push(itemToRemember, quantityToRemember, locationToRemember)
+		GoToState("Ready")
+	EndFunction
+
+	Function Pop()
+		{Pop an item from the stack. The item is not returned.}
+		GoToState("Working")
+		_Pop()
+		GoToState("Ready")
+	EndFunction
+
+	Function Remove(int index)
+		{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
+		GoToState("Working")
+		_Remove(index)
+		GoToState("Ready")
+	EndFunction
+
 	Function RecordDuplicates()
 		{Record duplicated items in the duplicates array.}
 		GoToState("Working")
@@ -97,6 +134,38 @@ Auto State Ready
 		GoToState("Ready")
 	EndFunction
 EndState
+
+Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference locationToRemember)
+	{Push a new item onto the stack.}
+	Parent._Push(itemToRemember, quantityToRemember, locationToRemember)
+	_BufferIndex(top)
+EndFunction
+
+Function _Pop()
+	{Pop an item from the stack. The itZem is not returned.}
+
+	;If we have world location data stored at the top index.
+	if HasWorldLocation()
+		locations[top].Delete()	;Mark the XMarker for deletion.
+	endif
+
+	_BufferIndex(top)
+
+	Parent._Pop()
+EndFunction
+
+Function _Remove(int index, bool del = True)
+	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
+
+	;If we have world location data stored at the index being removed and we want to delete it.
+	if del && HasWorldLocation()
+		locations[index].Delete()	;Mark the XMarker for deletion.
+	endif
+
+	_BufferIndex(index)
+
+	Parent._Remove(index, del)
+EndFunction
 
 Function _RecordDuplicates()
 	{Record duplicated items in the duplicates array.}
@@ -145,4 +214,22 @@ Function _ClearBuffers()
 	{Clear all stack buffers.}
 	itemBuffer = None
 	quantityBuffer = 0
+EndFunction
+
+bool Function HasContainer(int index = -1)
+	{Whether or not container data is stored at the given index.}
+	if index == -1
+		index = top
+	endif
+
+	return locations[index] != None && locations[index].GetBaseObject() != XMarker
+EndFunction
+
+bool Function HasWorldLocation(int index = -1)
+	{Whether or not world location data is stored at the given index.}
+	if index == -1
+		index = top
+	endif
+
+	return locations[index] != None && locations[index].GetBaseObject() == XMarker
 EndFunction

@@ -1,5 +1,5 @@
 Scriptname QuickDropStackScript extends ReferenceAlias
-{QuickDrop stack script. This reusable data structure stores a stack of Forms, integer quantities, and ObjectReference locations. Also can remember which of the items it contains are duplicates.}
+{QuickDrop stack script. This reusable data structure stores a stack of Forms, integer quantities, and ObjectReference locations.}
 
 ;Because Papyrus limits us to statically sized arrays, a true stack (of
 ;unlimited size) is not possible - without a linked list implementation,
@@ -46,9 +46,6 @@ int Property size = 5 Auto
 
 int Property depth = 0 Auto
 {The current depth of the stack - the number of slots that are actually filled.}
-
-Static Property XMarker Auto
-{An XMarker, of the type used to mark world locations. Needed in this script for comparison operations.}
 
 Event OnInit()
 	{Perform script setup.}
@@ -154,20 +151,10 @@ Function _Push(Form itemToRemember, int quantityToRemember, ObjectReference loca
 	items[top] = itemToRemember
 	quantities[top] = quantityToRemember
 	locations[top] = locationToRemember
-
-	_BufferIndex(top)
 EndFunction
 
 Function _Pop()
 	{Pop an item from the stack. The item is not returned.}
-
-	;If we have world location data stored at the top index.
-	if locations[top] != None && locations[top].GetBaseObject() == XMarker
-		locations[top].Delete()	;Mark the XMarker for deletion.
-	endif
-
-	_BufferIndex(top)
-
 	items[top] = None
 	locations[top] = None
 	top = GetPreviousStackIndex(top)
@@ -176,14 +163,6 @@ EndFunction
 
 Function _Remove(int index, bool del = True)
 	{Remove an item from the stack. Shift others down into its place. Doesn't check if index is within stack bounds. The item removed is not returned.}
-
-	;If we have world location data stored at the index being removed and we want to delete it.
-	if del && locations[index] != None && locations[index].GetBaseObject() == XMarker
-		locations[index].Delete()	;Mark the XMarker for deletion.
-	endif
-
-	_BufferIndex(index)
-
 	;Shift stack down, overwriting this index.
 	While index != top
 		int nextIndex = GetNextStackIndex(index)
@@ -232,24 +211,6 @@ Function _MoveToTop(int index)
 
 	_Remove(index, False)
 	_Push(tempItem, tempQuantity, tempLocation)
-EndFunction
-
-bool Function HasContainer(int index = -1)
-	{Whether or not container data is stored at the given index.}
-	if index == -1
-		index = top
-	endif
-
-	return locations[index] != None && locations[index].GetBaseObject() != XMarker
-EndFunction
-
-bool Function HasWorldLocation(int index = -1)
-	{Whether or not world location data is stored at the given index.}
-	if index == -1
-		index = top
-	endif
-
-	return locations[index] != None && locations[index].GetBaseObject() == XMarker
 EndFunction
 
 int Function GetNextStackIndex(int index)
